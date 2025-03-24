@@ -3,10 +3,12 @@ import { StarIcon } from "@heroicons/react/24/solid";
 import Button from "../ui/ButtonBase";
 interface props {
   title: string;
+  ref: React.RefObject<HTMLDivElement>;
 }
-const Card = ({ title }: props) => {
+const Card = ({ title, ref }: props) => {
   return (
     <div
+      ref={ref}
       data-last="false"
       className="sm:pr-4 sm:w-1/4 h-full md:w-1/4 lg:w-1/5 xl:w-1/6 relative gap-2 flex flex-col flex-shrink-0 w-1/3 pr-2"
     >

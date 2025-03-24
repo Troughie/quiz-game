@@ -1,7 +1,7 @@
 import useResize from "@/hooks/useResize";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { motion as m, AnimatePresence } from "framer-motion";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface SliderProps<T extends Record<string, any>> {
@@ -9,29 +9,28 @@ interface SliderProps<T extends Record<string, any>> {
   Component: React.ComponentType<T>;
 }
 
-const getItemsPerPage = (width: number) => {
-  if (width < 640) return 2; // sm
-  if (width < 1024) return 4; // lg
-  if (width < 1280) return 5; // xl
-  return 6; // 2xl
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Slider = <T extends Record<string, any>>({
   data,
   Component,
 }: SliderProps<T>) => {
   const { width } = useResize();
-  const itemsPerPage = useMemo(() => getItemsPerPage(width), [width]);
   const [page, setPage] = useState(0);
+  const [maxPage, setMaxPage] = useState(0);
+  const elementRef = useRef<HTMLDivElement>(null);
 
+  const slideRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    console.log(itemsPerPage);
+    const widthTotal = slideRef.current?.offsetWidth;
+    const widthElement = elementRef.current?.offsetWidth;
+    if (widthTotal && widthElement) {
+      const elements = Math.ceil(widthTotal / widthElement);
+      const maxPage = Math.ceil(data.length / elements);
 
-    setPage(0); // Reset về trang đầu khi thay đổi số lượng items per page
-  }, [itemsPerPage]);
-
-  const maxPage = Math.floor(data.length / itemsPerPage);
+      if (page > maxPage - 1) setPage(maxPage);
+      setMaxPage(maxPage);
+    }
+  }, [width, data.length, page]);
 
   const handleScroll = (direction: "left" | "right") => {
     setPage((prev) => {
@@ -51,20 +50,21 @@ const Slider = <T extends Record<string, any>>({
             className="size-15 absolute z-10 -left-2 top-1/4 p-1 opacity-90 hover:opacity-100 transition-opacity duration-300 rounded-full bg-white"
           />
         )}
-        <div className="overflow-hidden h-[200px]">
+
+        <div ref={slideRef} className="overflow-hidden h-auto md:h-[200px]">
           <AnimatePresence initial={false}>
             <m.div
-              animate={{ x: `-${page * 100}%` }} // Dịch chuyển theo trang
+              animate={{ x: `-${page * 100}%` }}
               transition={{ type: "spring", stiffness: 100, damping: 20 }}
-              className="flex gap-4 h-full"
+              className="flex h-full"
             >
               {data.map((item, index) => (
-                <Component key={index} {...item} />
+                <Component ref={elementRef} key={index} {...item} />
               ))}
             </m.div>
           </AnimatePresence>
         </div>
-        {page < maxPage && (
+        {page < maxPage - 1 && (
           <ChevronRightIcon
             onClick={() => handleScroll("right")}
             className="size-15 absolute z-10 right-0 top-1/4 p-1 hover:opacity-100 transition-opacity duration-300 opacity-90 rounded-full bg-white"
