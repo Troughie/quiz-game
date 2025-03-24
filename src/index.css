@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@theme {
+  --color-search: rgb(255 167 160);
+  --color-cam: rgb(198, 234, 132);
+  --color-black-10: rgb(229 227 219);
+  --color-fff: rgb(255 255 255 / 0%);
+  --color-input: rgb(255 250 230);
+  --color-input-hover: rgb(227 224 213);
+  --color-primary: #0000007f;
+  --color-green167: rgb(0, 167, 109);
+  --color-shadow: #8aa45c;
+}
