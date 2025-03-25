@@ -130,7 +130,7 @@ const Navbar = () => {
           <Button
             classContainer="text-black md:px-8 md:block hidden h-10 min-w-[100px] border-3 rounded-3xl"
             classShadow="bg-shadow rounded-3xl"
-            classBg="bg-cam rounded-3xl "
+            classBg="bg-cam rounded-3xl"
             text="Sign in"
             classText=""
             clickFunc={() => {

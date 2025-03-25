@@ -9,7 +9,7 @@ const Layout = () => {
         <Navbar />
 
         {/* Main Content */}
-        <main className="flex-1 container mx-auto p-8">
+        <main className="flex-1 container mx-auto px-8">
           <Outlet />
         </main>
 

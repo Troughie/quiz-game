@@ -1,3 +1,4 @@
+import withParams from "@/HOC/defaultParam";
 import { Navigate, Outlet } from "react-router-dom";
 
 interface PublicRouteProps {
@@ -9,7 +10,8 @@ const PublicRoute = ({ isAuthenticated }: PublicRouteProps) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <Outlet />;
+  const ProtectedComponent = withParams(() => <Outlet />);
+  return <ProtectedComponent />;
 };
 
 export default PublicRoute;

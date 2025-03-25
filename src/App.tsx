@@ -6,6 +6,8 @@ import Home from "@/pages/Home";
 import PrivateRoute from "@/routes/PrivateRoute";
 import PublicRoute from "@/routes/PublicRoute";
 import Dashboard from "./pages/Dashboard";
+import Detail from "./pages/Detail";
+import Play from "./pages/Play";
 
 function App() {
   return (
@@ -18,6 +20,7 @@ function App() {
           <Route element={<PublicRoute isAuthenticated={false} />}>
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            <Route path=":title" element={<Detail />} />
           </Route>
 
           {/* Private Routes */}
@@ -26,6 +29,7 @@ function App() {
             <Route path="profile" element={<div>Profile Page</div>} />
           </Route>
         </Route>
+        <Route path="play/:title" element={<Play />} />
       </Routes>
     </BrowserRouter>
   );

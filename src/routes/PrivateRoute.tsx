@@ -1,3 +1,4 @@
+import withParams from "@/HOC/defaultParam";
 import { Navigate, Outlet } from "react-router-dom";
 
 interface PrivateRouteProps {
@@ -9,7 +10,8 @@ const PrivateRoute = ({ isAuthenticated }: PrivateRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  const ProtectedComponent = withParams(() => <Outlet />);
+  return <ProtectedComponent />;
 };
 
 export default PrivateRoute;

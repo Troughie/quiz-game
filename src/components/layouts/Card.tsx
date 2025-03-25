@@ -1,11 +1,19 @@
 import React from "react";
 import { StarIcon } from "@heroicons/react/24/solid";
 import Button from "../ui/ButtonBase";
+import { Link, useNavigate } from "react-router";
 interface props {
   title: string;
-  ref: React.RefObject<HTMLDivElement>;
+  author: string;
+  rating: number;
+  image: string;
 }
-const Card = ({ title, ref }: props) => {
+
+const Card = React.forwardRef<HTMLDivElement, props>(({ title }, ref) => {
+  const navigate = useNavigate();
+  const handleClick = () => {
+    navigate(`/${title}`);
+  };
   return (
     <div
       ref={ref}
@@ -21,22 +29,28 @@ const Card = ({ title, ref }: props) => {
             classContainer="md:px-8 md:block hidden h-10 w-2/3 border-3 rounded-3xl"
             classShadow="bg-shadow rounded-3xl"
             classText="text-white"
-            clickFunc={() => {}}
+            clickFunc={handleClick}
           />
         </div>
       </div>
-      <h2 className="text-lg font-bold">{title}</h2>
+      <Link
+        to={`/${title}`}
+        className="text-lg font-bold hover:underline cursor-pointer transition-all duration-300 hover:scale-90"
+      >
+        {title}
+      </Link>
       <div className="flex gap-2">
-        <div className="star flex gap-1 items-center">
-          <span>5</span> <StarIcon className="w-4 h-4 text-yellow-500" />
+        <div className="star flex gap-[1px] items-center text-yellow-500">
+          <span className="font-semibold">5</span>{" "}
+          <StarIcon className="w-4 h-4 " />
         </div>
-        <div className="by">
-          <span>By</span>
-          <span>John Doe</span>
+        <div className="by group flex gap-1 items-center cursor-pointer">
+          <span className="group-hover:underline">By</span>
+          <span className="group-hover:underline">John Doe</span>
         </div>
       </div>
     </div>
   );
-};
+});
 
 export default Card;
