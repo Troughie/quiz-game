@@ -20,7 +20,7 @@ function App() {
           <Route element={<PublicRoute isAuthenticated={false} />}>
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
-            <Route path=":title" element={<Detail />} />
+            <Route path="detail/:title" element={<Detail />} />
           </Route>
 
           {/* Private Routes */}
@@ -30,6 +30,7 @@ function App() {
           </Route>
         </Route>
         <Route path="play/:title" element={<Lobby />} />
+        <Route path="/:pin" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   );

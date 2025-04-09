@@ -10,3 +10,10 @@ export const NAME_DEFAULT = [
   "Flanagan",
   "Sylvan",
 ];
+
+export const NAME_SHOW = {
+  MODAL: "modal",
+  MUTE: "mute",
+  COPY: "copy",
+  HIDDEN_PIN: "hiddenPin",
+};

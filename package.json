@@ -16,6 +16,7 @@
     "@tailwindcss/vite": "^4.0.15",
     "@tanstack/react-query": "^5.69.0",
     "@types/qrcode.react": "^1.0.5",
+    "antd": "^5.24.6",
     "axios": "^1.8.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.5.0",
