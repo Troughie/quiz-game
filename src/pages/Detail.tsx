@@ -1,9 +1,9 @@
-import Button from "@/components/ui/ButtonBase";
+import Button from "@/components/ui/ButtonCustom";
 import { StarIcon } from "@heroicons/react/24/solid";
-import React from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 
 const Detail = () => {
+  const navigate = useNavigate();
   const { title } = useParams();
   return (
     <div className="flex flex-col gap-12">
@@ -31,7 +31,9 @@ const Detail = () => {
               classContainer="md:px-8 py-6 h-10 w-1/5 md:w-2/3 text-black border-4 rounded-3xl"
               classShadow="bg-shadow rounded-3xl"
               classText=""
-              clickFunc={() => {}}
+              onClick={() => {
+                navigate(`/play/${title}`, { state: { isHost: true } });
+              }}
             />
             <div className="size-10 rounded-full bg-blue-400"></div>
             <div className="size-10 rounded-full bg-blue-400"></div>

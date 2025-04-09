@@ -1,6 +1,6 @@
 import React from "react";
 import { StarIcon } from "@heroicons/react/24/solid";
-import Button from "../ui/ButtonBase";
+import Button from "../ui/ButtonCustom";
 import { Link, useNavigate } from "react-router";
 interface props {
   title: string;

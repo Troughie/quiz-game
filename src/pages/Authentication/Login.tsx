@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import Button from "@/components/ui/ButtonBase";
+import Button from "@/components/ui/ButtonCustom";
 import Input from "@/components/ui/InputBase";
 import { useAuthentication } from "@/hooks/useAuthentication";
 import { AuthSchema } from "@/schema/AuthSchema";
@@ -36,9 +36,6 @@ const Login = () => {
         classShadow="bg-black  opacity-40 -bottom-1"
         classContainer=" mb-2"
         classText=" z-2 top-3"
-        clickFunc={() => {
-          console.log("google");
-        }}
       />
       <FormProvider {...methods}>
         <form className="relative" onSubmit={methods.handleSubmit(handleLogin)}>
@@ -73,7 +70,6 @@ const Login = () => {
             classBg="z-2 relative w-full py-6 px-4 bg-green167"
             classShadow="bg-black opacity-80 -bottom-1"
             text="Sign in"
-            clickFunc={() => {}}
             classText="text-white z-2 top-3"
           />
         </form>

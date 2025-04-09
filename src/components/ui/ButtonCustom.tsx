@@ -1,12 +1,12 @@
 import cn from "@/HOC/cn";
+import type { ButtonHTMLAttributes } from "react";
 
-interface props {
+interface props extends ButtonHTMLAttributes<HTMLButtonElement> {
   text: string;
-  classBg: string;
-  classContainer: string;
-  classShadow: string;
-  classText: string;
-  clickFunc: () => void;
+  classBg?: string;
+  classContainer?: string;
+  classShadow?: string;
+  classText?: string;
 }
 
 const Button = ({
@@ -15,7 +15,7 @@ const Button = ({
   classContainer,
   classShadow,
   classText,
-  clickFunc,
+  ...props
 }: props) => {
   return (
     <>
@@ -38,7 +38,7 @@ const Button = ({
           )}
         ></div>
         <button
-          onClick={clickFunc}
+          {...props}
           className={cn("absolute inset-0 top-1 z-1 cursor-pointer", classText)}
         >
           {text}

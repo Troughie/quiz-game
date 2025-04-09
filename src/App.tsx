@@ -7,7 +7,7 @@ import PrivateRoute from "@/routes/PrivateRoute";
 import PublicRoute from "@/routes/PublicRoute";
 import Dashboard from "./pages/Dashboard";
 import Detail from "./pages/Detail";
-import Play from "./pages/Play";
+import Lobby from "./pages/Lobby";
 
 function App() {
   return (
@@ -29,7 +29,7 @@ function App() {
             <Route path="profile" element={<div>Profile Page</div>} />
           </Route>
         </Route>
-        <Route path="play/:title" element={<Play />} />
+        <Route path="play/:title" element={<Lobby />} />
       </Routes>
     </BrowserRouter>
   );

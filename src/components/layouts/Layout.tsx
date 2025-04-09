@@ -1,7 +1,20 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "./Navbar";
 import LoadingComponent from "./Loading";
+import { usePlayerStore } from "@/store/Player";
+import { useEffect } from "react";
+import { randomName } from "@/utils";
+
+import { v4 as uuidv4 } from "uuid";
 const Layout = () => {
+  const { player, createPlayer } = usePlayerStore();
+
+  useEffect(() => {
+    if (!player?.id) {
+      createPlayer({ id: uuidv4(), name: randomName(), avatar: "" });
+    }
+  }, []);
+
   return (
     <>
       <LoadingComponent />
