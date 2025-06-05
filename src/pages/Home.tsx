@@ -1,28 +1,44 @@
 import Card from "@/components/layouts/Card";
 import NavHome from "@/components/layouts/NavHome";
 import Slider from "@/components/layouts/Slider";
-interface props {
-  title: string;
-  author: string;
-  rating: number;
-  image: string;
-}
-const data: props[] = [
-  { title: "Title2", author: "Author", rating: 5, image: "Image" },
-  { title: "Title3", author: "Author", rating: 5, image: "Image" },
-  { title: "Title4", author: "Author", rating: 5, image: "Image" },
-  { title: "Title5", author: "Author", rating: 5, image: "Image" },
-  { title: "Title6", author: "Author", rating: 5, image: "Image" },
-  { title: "Title7", author: "Author", rating: 5, image: "Image" },
-  { title: "Title8", author: "Author", rating: 5, image: "Image" },
-  { title: "Title9", author: "Author", rating: 5, image: "Image" },
-  { title: "Title10", author: "Author", rating: 5, image: "Image" },
-];
+import Button from "@/components/ui/ButtonCustom";
+import { useQuizStore } from "@/features/createQuiz/store/quizStore";
+import { type QuizProp } from "@/features/createQuiz/type";
+import { useHomeFunction } from "@/features/home/functional/getRequest";
+import { useDynamicNavigate } from "@/hooks/useNavigateState";
+import { useSessionStorage } from "@/hooks/useSessionStorage";
+
 const Home = () => {
+  const { reset } = useQuizStore();
+  const navigate = useDynamicNavigate<QuizProp>();
+  const { remove } = useSessionStorage<string | null>("quizId", null);
+  const { quizzes } = useHomeFunction();
+  const handleEditQuiz = () => {
+    reset();
+    navigate("/edit/new", { typeQuiz: "selectType" });
+    sessionStorage.removeItem("quiz_created");
+    remove();
+  };
+
   return (
     <div className="flex flex-col gap-16">
       <NavHome />
-      <Slider data={data} Component={Card} />
+      <div>
+        <div className="w-full bg-black/10 rounded-3xl h-40 flex flex-col justify-center items-center gap-4">
+          <h1 className="text-3xl font-bold">Create a quiz</h1>
+          <Button
+            text="Quiz editor"
+            classBg="bg-green-500 rounded-3xl"
+            classContainer="border-4 rounded-3xl w-1/3 md:w-1/4 bg-green-600 h-1/4 md:h-2/6"
+            classShadow="bg-black/10 rounded-3xl"
+            classText="text-xs md:text-sm"
+            onClick={handleEditQuiz}
+          />
+        </div>
+      </div>
+      {Object.entries(quizzes).map(([key, quiz]) => {
+        return <Slider title={key} data={quiz} Component={Card} />;
+      })}
     </div>
   );
 };

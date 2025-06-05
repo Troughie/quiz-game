@@ -12,3 +12,28 @@
   --color-shadow: #8aa45c;
   --color-petrol: rgb(19 51 56);
 }
+
+@layer utilities {
+  @keyframes shrink {
+    from {
+      width: 100%;
+    }
+    to {
+      width: 0%;
+    }
+  }
+
+  .progress-bar {
+    animation-name: shrink;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+
+  .running {
+    animation-play-state: running;
+  }
+
+  .paused {
+    animation-play-state: paused;
+  }
+}

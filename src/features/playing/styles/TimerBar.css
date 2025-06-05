@@ -1,0 +1,19 @@
+@keyframes progress-bar {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.progress-bar {
+  animation-name: progress-bar;
+  animation-timing-function: linear;
+  animation-play-state: running;
+  width: 100%;
+}
+
+.progress-bar.paused {
+  animation-play-state: paused;
+}

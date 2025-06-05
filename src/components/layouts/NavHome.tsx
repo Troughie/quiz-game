@@ -96,6 +96,7 @@ const NavHome = () => {
           <div className="md:flex-row md:space-y-0 flex flex-col justify-between w-full space-y-2 font-sans text-base text-left text-black">
             {NavHomeItems.map(({ link, img, title }) => (
               <a
+                key={title}
                 className="whitespace-nowrap group font-roboto md:flex-col md:space-x-0 flex flex-row items-center space-x-3"
                 href={link}
               >

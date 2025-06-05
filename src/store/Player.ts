@@ -5,7 +5,7 @@ import { persist } from "zustand/middleware";
 interface PlayerStore {
   player: Player;
   createPlayer: (player: Player) => void;
-  updatePlayer: (player: Player) => void;
+  updatePlayer: (player: Partial<Player>) => void;
 }
 
 export const usePlayerStore = create<PlayerStore>()(

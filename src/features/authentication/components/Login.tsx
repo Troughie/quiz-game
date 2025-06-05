@@ -2,10 +2,12 @@ import { useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import Button from "@/components/ui/ButtonCustom";
 import Input from "@/components/ui/InputBase";
-import { useAuthentication } from "@/hooks/useAuthentication";
-import { AuthSchema } from "@/schema/AuthSchema";
 import type { SignInCredentials } from "@/types/AuthType";
 import { yupResolver } from "@hookform/resolvers/yup";
+import { AuthSchema } from "../AuthenticationSchema";
+import { useAuthentication } from "../hooks/useAuthentication";
+import useRequest from "@/hooks/useMutation";
+import { post } from "@/libs/init.axios";
 
 const Login = () => {
   const [show, setShow] = useState(false);
@@ -17,26 +19,35 @@ const Login = () => {
       password: "",
     },
   });
-  const { login } = useAuthentication();
 
-  const handleLogin = (data: SignInCredentials) => {
-    login(data);
+  const { signIn, loading } = useAuthentication();
+
+  const { mutate: loginApi } = useRequest({
+    mutationFn: ({ name, token }) => {
+      return post({
+        url: "/user/sync",
+        data: { username: name },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    },
+    showSwal: false,
+    showSuccess: false,
+  });
+
+  const handleLogin = async (data: SignInCredentials) => {
+    const result = await signIn(data);
+    if (result?.session?.access_token) {
+      loginApi({
+        name: result?.user?.user_metadata?.username,
+        token: result?.session?.access_token,
+      });
+    }
     methods.reset();
   };
-
   return (
-    <div className="bg-black-10 relative sm:rounded-xl sm:h-auto sm:mt-8 sm:px-8 text-black-50 container flex flex-col items-stretch self-center h-full max-w-screen-sm gap-4 px-4 pt-4 pb-10 mx-auto">
-      <p className="pt-4 pb-8 text-2xl font-bold text-center text-black">
-        Sign in
-      </p>
-
-      <Button
-        text="Continue with google"
-        classBg="bg-input z-2 relative w-full py-6 px-4 opacity-[95%]"
-        classShadow="bg-black  opacity-40 -bottom-1"
-        classContainer=" mb-2"
-        classText=" z-2 top-3"
-      />
+    <div>
       <FormProvider {...methods}>
         <form className="relative" onSubmit={methods.handleSubmit(handleLogin)}>
           <span className="text-primary font-semibold">
@@ -64,21 +75,24 @@ const Login = () => {
             </div>
           </span>
           <Input className="" name="password" showPassword={show} />
-
-          <Button
-            classContainer="mt-8"
-            classBg="z-2 relative w-full py-6 px-4 bg-green167"
-            classShadow="bg-black opacity-80 -bottom-1"
-            text="Sign in"
-            classText="text-white z-2 top-3"
-          />
+          <div className="flex items-center justify-center">
+            <Button
+              classContainer="mt-8"
+              classBg="bg-green167"
+              classShadow="bg-black/70"
+              text={!loading ? `Sign in` : "Loading..."}
+              fullWidth
+              disabled={loading}
+              classText="text-white z-2 top-3"
+            />
+          </div>
         </form>
       </FormProvider>
 
       <div className="flex justify-around md:mt-16 mt-8 items-center font-bold text-green167">
         <span>
           No account?{" "}
-          <a href="#" className="underline">
+          <a href="/register" className="underline">
             Create here
           </a>
         </span>

@@ -10,7 +10,7 @@ import { NAME_SHOW } from "@/constant";
 
 const EditCharacter = () => {
   const { player } = usePlayerStore();
-  const { setIsShow } = useShowFunction();
+  const { setIsBoolean } = useShowFunction();
   const methods = useForm({
     mode: "onChange",
     resolver: yupResolver(CharacterSchema),
@@ -19,7 +19,7 @@ const EditCharacter = () => {
     },
   });
   const closeModal = () => {
-    setIsShow(NAME_SHOW.MODAL, false);
+    setIsBoolean(NAME_SHOW.MODAL, false);
   };
 
   return (

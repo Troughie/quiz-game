@@ -14,6 +14,7 @@ const useRequest = ({
   onSuccess,
   onError,
   showSuccess = true,
+  showSwal = true,
   ...props
 }: Props) => {
   const { setIsLoading } = useLoading();
@@ -32,21 +33,24 @@ const useRequest = ({
     },
     onSuccess(res, variables: void, context: unknown) {
       onSuccess?.(res, variables, context);
-      sweetAlert({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        type: (res as any)?.success ? typeAlert.success : typeAlert.error,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        message: (res as any)?.message,
-      });
+      if (showSwal)
+        sweetAlert({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          type: (res as any)?.success ? typeAlert.success : typeAlert.error,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          message: (res as any)?.message,
+        });
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError(err: any, variables: void, context: unknown) {
       onError?.(err, variables, context);
       if (err && err.message) {
-        sweetAlert({
-          message: err?.message,
-          type: typeAlert.error,
-        });
+        console.error("Error :" + err?.message);
+        if (showSwal)
+          sweetAlert({
+            message: err?.message,
+            type: typeAlert.error,
+          });
       }
     },
   });

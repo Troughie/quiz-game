@@ -1,8 +1,119 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import Button from "../ui/ButtonCustom";
-import { splitPin, to } from "@/utils";
-import instance from "@/libs/init.axios";
+import { splitPin } from "@/utils";
+import { post } from "@/libs/init.axios";
+import useRequest from "@/hooks/useMutation";
+import { useAuth } from "@/hooks/useAuth";
+
+interface SearchProps {
+  searchInput: string;
+  handleSearchValue: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSubmitForm: (e: React.FormEvent) => void;
+  className: string;
+  error?: string;
+}
+const SearchPinBar = ({
+  searchInput,
+  handleSearchValue,
+  handleSubmitForm,
+  className,
+  error,
+}: SearchProps) => {
+  return (
+    <div className="rounded-xl bg-search md:p-4 flex flex-col items-center justify-center w-full gap-2 p-4 overflow-hidden">
+      <div className="justify-evenly flex flex-row items-center w-full px-2">
+        <div className="whitespace-nowrap flex flex-row items-center gap-4 font-sans md:text-base lg:text-xl text-base font-black leading-tight tracking-normal text-black capitalize">
+          <div className="md:flex-row md:gap-2 flex flex-col items-center">
+            <div className="lg:block md:hidden block">Join game?</div>
+            <div className="lg:hidden md:block hidden">Join?</div>
+            <div className="lg:block md:hidden block">Enter PIN:</div>
+            <div className="lg:hidden md:block hidden">PIN:</div>
+          </div>
+          <form className={className} onSubmit={handleSubmitForm}>
+            <input
+              className="focus:placeholder:text-transparent w-full my-auto font-bold text-center rounded-full h-12 lg:h-14 text-base lg:text-xl bg-white shadow-inner-hard-1 border-black border-solid border-4"
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck="false"
+              value={searchInput}
+              onChange={(e) => handleSearchValue(e)}
+              placeholder="123 456"
+              maxLength={7}
+              pattern="[0-9]{3} [0-9]{3}"
+            />
+            {error && (
+              <span className="md:flex lg:text-base flex-row items-center text-sm font-normal">
+                Wrong pin!
+              </span>
+            )}
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+interface RightNavbarProps {
+  session: boolean;
+}
+const RightNavbar = ({ session }: RightNavbarProps) => {
+  const navigate = useNavigate();
+  console.log(session);
+
+  const buttonSignIn = () => {
+    if (!session) {
+      return (
+        <>
+          {" "}
+          <Button
+            classContainer="text-black md:px-8 md:block hidden h-10 min-w-[100px] border-3 rounded-3xl"
+            classShadow="bg-shadow rounded-3xl"
+            classBg="bg-cam rounded-3xl"
+            text="Sign in"
+            classText=""
+            onClick={() => {
+              navigate("/login");
+            }}
+          />
+        </>
+      );
+    } else {
+      return (
+        <>
+          <img
+            src="#"
+            alt="avatar"
+            className="size-12 rounded-full bg-red-600 cursor-pointer"
+            onClick={() => navigate("/profile")}
+          />
+        </>
+      );
+    }
+  };
+
+  return (
+    <div className="flex gap-4  items-center relative">
+      <button className="flex-col justify-center items-center  bg-opacity-10 w-10 h-10 flex-shrink-0 rounded-full block md:hidden">
+        <svg
+          viewBox="0 0 40 40"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-10 h-10"
+        >
+          <path
+            fill="currentColor"
+            d="M12.48 24.516a1.48 1.48 0 0 0-1.48 1.48 1.48 1.48 0 0 0 1.48 1.48h15.04a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-1.48-1.48zm0-6a1.48 1.48 0 0 0-1.48 1.48 1.48 1.48 0 0 0 1.48 1.48h15.04a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-1.48-1.48zm0-6a1.48 1.48 0 0 0-1.48 1.48 1.48 1.48 0 0 0 1.48 1.48h15.04a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-1.48-1.48z"
+          ></path>
+        </svg>
+      </button>
+
+      {buttonSignIn()}
+    </div>
+  );
+};
 
 const Navbar = () => {
   const [showSearch, setShowSearch] = useState(false);
@@ -12,6 +123,12 @@ const Navbar = () => {
   const formRef = useRef<HTMLFormElement>(null);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { session } = useAuth();
+
+  useEffect(() => {
+    console.log(session);
+  }, [session]);
+
   const handleSearch = (event: React.MouseEvent) => {
     event.stopPropagation();
     setShowSearch(!showSearch);
@@ -32,27 +149,31 @@ const Navbar = () => {
       document.removeEventListener("click", closeSearch);
     };
   }, []);
+
   const handleSearchValue = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const cleanedValue = value.replace(/\s/g, "");
 
     setSearchInput(splitPin(cleanedValue));
   };
+
+  const { mutate: submitPin } = useRequest({
+    mutationFn: (pin: string) => {
+      return post({ url: "lobby/submit-pin", data: { pin } });
+    },
+    onSuccess: () => {
+      navigate(`/${searchInput.split(" ").join("")}`);
+    },
+    onError: (err) => {
+      setError(err.message);
+    },
+    showSuccess: false,
+    showSwal: false,
+  });
+
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    const [err, response] = await to(
-      instance.post<{ title: string }>("/lobby/submit-pin", {
-        pin: searchInput,
-      })
-    );
-
-    if (err) {
-      setError(err.message);
-    }
-    //@ts-expect-error
-    const { title } = response!;
-    console.log(title);
-    navigate(`/play/${title}`, { state: { roomId: searchInput } });
+    submitPin(searchInput);
   };
   return (
     <>
@@ -60,40 +181,13 @@ const Navbar = () => {
         <img src="#" alt="" className="flex-1 w-[200px] h-20" />
         <div className="space-x-2 flex items-center relative ">
           <div className={`hidden px-4 md:flex ${flex} items-center`}>
-            <div className="rounded-xl bg-search md:p-4 flex flex-col items-center justify-center w-full gap-2 p-4 overflow-hidden">
-              <div className="justify-evenly flex flex-row items-center w-full px-2">
-                <div className="whitespace-nowrap flex flex-row items-center gap-4 font-sans md:text-base lg:text-xl text-base font-black leading-tight tracking-normal text-black capitalize">
-                  <div className="md:flex-row md:gap-2 flex flex-col items-center">
-                    <div className="lg:block md:hidden block">Join game?</div>
-                    <div className="lg:hidden md:block hidden">Join?</div>
-                    <div className="lg:block md:hidden block">Enter PIN:</div>
-                    <div className="lg:hidden md:block hidden">PIN:</div>
-                  </div>
-                  <form
-                    className=" md:max-w-md flex gap-4 justify-center w-full"
-                    action="#"
-                  >
-                    <input
-                      className="focus:placeholder:text-transparent w-full my-auto font-bold text-center rounded-full h-12 lg:h-14 text-base lg:text-xl bg-white shadow-inner-hard-1 border-black border-solid border-4"
-                      type="text"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      autoCorrect="off"
-                      autoCapitalize="none"
-                      spellCheck="false"
-                      value={searchInput}
-                      onChange={(e) => handleSearchValue(e)}
-                      placeholder="123 456"
-                      maxLength={7}
-                      pattern="[0-9]{3} [0-9]{3}"
-                    />
-                    <span className="md:flex lg:text-base flex-row items-center hidden text-sm font-normal">
-                      Wrong pin!
-                    </span>
-                  </form>
-                </div>
-              </div>
-            </div>
+            <SearchPinBar
+              className="md:max-w-md flex gap-4 justify-center w-full"
+              handleSearchValue={handleSearchValue}
+              handleSubmitForm={handleSubmitForm}
+              searchInput={searchInput}
+              error={error}
+            />
           </div>
           <form
             ref={formRef}
@@ -147,70 +241,17 @@ const Navbar = () => {
               </svg>
             </button>
           </form>
-          <div className="flex gap-4  items-center relative">
-            <button className="flex-col justify-center items-center  bg-opacity-10 w-10 h-10 flex-shrink-0 rounded-full block md:hidden">
-              <svg
-                viewBox="0 0 40 40"
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-10 h-10"
-              >
-                <path
-                  fill="currentColor"
-                  d="M12.48 24.516a1.48 1.48 0 0 0-1.48 1.48 1.48 1.48 0 0 0 1.48 1.48h15.04a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-1.48-1.48zm0-6a1.48 1.48 0 0 0-1.48 1.48 1.48 1.48 0 0 0 1.48 1.48h15.04a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-1.48-1.48zm0-6a1.48 1.48 0 0 0-1.48 1.48 1.48 1.48 0 0 0 1.48 1.48h15.04a1.48 1.48 0 0 0 1.48-1.48 1.48 1.48 0 0 0-1.48-1.48z"
-                ></path>
-              </svg>
-            </button>
-
-            <Button
-              classContainer="text-black md:px-8 md:block hidden h-10 min-w-[100px] border-3 rounded-3xl"
-              classShadow="bg-shadow rounded-3xl"
-              classBg="bg-cam rounded-3xl"
-              text="Sign in"
-              classText=""
-              onClick={() => {
-                navigate("/login");
-              }}
-            />
-          </div>
+          {<RightNavbar session={!!session} />}
         </div>
       </div>
       <div className={`flex px-4 md:hidden mb-2 items-center`}>
-        <div className="rounded-xl bg-search md:p-4 flex flex-col items-center justify-center w-full gap-2 p-4 overflow-hidden">
-          <div className="justify-evenly flex flex-row items-center w-full px-2">
-            <div className="whitespace-nowrap flex flex-row items-center gap-4 font-sans md:text-base lg:text-xl text-base font-black leading-tight tracking-normal text-black capitalize">
-              <div className="md:flex-row md:gap-2 flex flex-col items-center">
-                <div className="lg:block md:hidden block">Join game?</div>
-                <div className="lg:hidden md:block hidden">Join?</div>
-                <div className="lg:block md:hidden block">Enter PIN:</div>
-                <div className="lg:hidden md:block hidden">PIN:</div>
-              </div>
-              <form
-                className=" md:max-w-md flex items-center gap-4 justify-center w-full"
-                onSubmit={handleSubmitForm}
-              >
-                <input
-                  className="focus:placeholder:text-transparent w-full my-auto font-bold text-center rounded-full h-12 lg:h-14 text-base lg:text-xl bg-white shadow-inner-hard-1 border-black border-solid border-4"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="none"
-                  spellCheck="false"
-                  value={searchInput}
-                  onChange={(e) => handleSearchValue(e)}
-                  placeholder="123 456"
-                  maxLength={7}
-                  pattern="[0-9]{3} [0-9]{3}"
-                />
-                {error && (
-                  <span className="md:flex lg:text-base flex-row items-center text-sm font-normal">
-                    Wrong pin!
-                  </span>
-                )}
-              </form>
-            </div>
-          </div>
-        </div>
+        <SearchPinBar
+          className="md:max-w-md flex items-center gap-4 justify-center w-full"
+          handleSearchValue={handleSearchValue}
+          handleSubmitForm={handleSubmitForm}
+          error={error}
+          searchInput={searchInput}
+        />
       </div>
     </>
   );

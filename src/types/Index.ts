@@ -11,6 +11,13 @@ export interface Player {
   avatar?: string;
 }
 
+export interface PlayerWithScore extends Player {
+  score: number;
+  prevScore: number;
+  hasAnswered: number;
+  newPoints: number;
+}
+
 export interface Room {
   id: string;
   host: Player;
@@ -18,3 +25,21 @@ export interface Room {
   status: "waiting" | "playing" | "finished";
   createdAt: string;
 }
+
+export type ResponseBase<T> = {
+  success: boolean;
+  data: T;
+  message: string;
+  time: string;
+};
+
+export type GamePhase =
+  | "WAITING"
+  | "START_ANIMATION"
+  | "PRE_QUESTION"
+  | "QUESTION_DISPLAY"
+  | "QUESTION_ANSWERING"
+  | "SHOWING_ANSWER"
+  | "SHOWING_FUNFACT"
+  | "SHOWING_SCOREBOARD"
+  | "GAME_ENDED";

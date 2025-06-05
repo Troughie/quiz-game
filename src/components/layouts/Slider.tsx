@@ -7,12 +7,14 @@ import React, { useState, useEffect, useRef } from "react";
 interface SliderProps<T extends Record<string, any>> {
   data: T[];
   Component: React.ComponentType<T>;
+  title: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const Slider = <T extends Record<string, any>>({
   data,
   Component,
+  title,
 }: SliderProps<T>) => {
   const { width } = useResize();
   const [page, setPage] = useState(0);
@@ -70,7 +72,7 @@ const Slider = <T extends Record<string, any>>({
   };
   return (
     <>
-      <h1 className="text-2xl font-bold">Recently published</h1>
+      <h1 className="text-2xl font-bold">{title}</h1>
       <div className="relative">
         {page > 0 && (
           <m.div

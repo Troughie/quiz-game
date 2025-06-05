@@ -1,26 +1,11 @@
 import type { Player, Room } from "@/types/Index";
-import { connect, socket } from "./init.socket";
-
-// interface QuizRoom {
-//   pin: string;
-//   players: Player[];
-//   settings: {
-//     timePerQuestion: number;
-//     numberOfQuestions: number;
-//     gameMode: "classic" | "team" | "battle";
-//     randomizeQuestions: boolean;
-//     showCorrectAnswers: boolean;
-//   };
-//   status: "waiting" | "playing" | "finished";
-// }
-
+import { socket } from "@/socket/init.socket";
 // Host methods
 export const createRoom = (
   player: Player,
   idQuiz: string | undefined
 ): Promise<Room> => {
   return new Promise((resolve, reject) => {
-    connect();
     if (!socket) {
       return reject(new Error("Socket not connected"));
     }
@@ -58,7 +43,6 @@ export const joinRoom = async (
   player: Player
 ): Promise<Room> => {
   return new Promise((resolve, reject) => {
-    connect();
     if (!socket) return;
 
     socket.emit("joinRoom", {
@@ -71,6 +55,48 @@ export const joinRoom = async (
     });
 
     socket.once("joinError", ({ message }) => {
+      console.log(message);
+
+      reject(new Error(message));
+    });
+  });
+};
+
+export const reconnectRoom = async (
+  roomId: string,
+  player: Player,
+  isHost: boolean
+): Promise<Room> => {
+  return new Promise((resolve, reject) => {
+    if (!socket) return;
+
+    socket.emit("reconnect", {
+      roomId,
+      player,
+      isHost,
+    });
+
+    socket.once("reconnectSuccess", (room: Room) => {
+      resolve(room);
+    });
+
+    socket.once("reconnectError", ({ message }) => {
+      console.log(message);
+
+      reject(new Error(message));
+    });
+  });
+};
+
+export const startRoom = async (roomId: string) => {
+  return new Promise((resolve, reject) => {
+    if (!socket) return;
+    socket.emit("startGame", roomId);
+    socket.once("startSuccess", (room: Room) => {
+      resolve(room);
+    });
+
+    socket.once("startError", ({ message }) => {
       reject(new Error(message));
     });
   });

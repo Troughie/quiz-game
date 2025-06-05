@@ -7,6 +7,12 @@ export interface SignInCredentials {
   password: string;
 }
 
+export interface RegisterCredentials {
+  email: string;
+  password: string;
+  username: string;
+}
+
 export type SocialProvider = "google" | "facebook" | "github" | "twitter";
 
 export interface SocialProviderOption {

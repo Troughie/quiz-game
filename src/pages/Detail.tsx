@@ -5,6 +5,10 @@ import { useNavigate, useParams } from "react-router";
 const Detail = () => {
   const navigate = useNavigate();
   const { title } = useParams();
+  const handlePlayQuiz = () => {
+    navigate(`/play/${title}`);
+  };
+
   return (
     <div className="flex flex-col gap-12">
       <div className="top-detail w-full h-auto grid grid-rows-3 lg:grid-rows-1 grid-cols-3 p-4 bg-black-10 rounded-lg">
@@ -31,9 +35,7 @@ const Detail = () => {
               classContainer="md:px-8 py-6 h-10 w-1/5 md:w-2/3 text-black border-4 rounded-3xl"
               classShadow="bg-shadow rounded-3xl"
               classText=""
-              onClick={() => {
-                navigate(`/play/${title}`, { state: { isHost: true } });
-              }}
+              onClick={handlePlayQuiz}
             />
             <div className="size-10 rounded-full bg-blue-400"></div>
             <div className="size-10 rounded-full bg-blue-400"></div>

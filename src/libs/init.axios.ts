@@ -1,3 +1,4 @@
+import { supabase } from "@/features/authentication/hooks/useAuthentication";
 import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
@@ -16,6 +17,12 @@ instance.interceptors.request.use(
   async function (
     config: InternalAxiosRequestConfig<unknown>
   ): Promise<InternalAxiosRequestConfig<unknown>> {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
     return config;
   },
   function (error) {

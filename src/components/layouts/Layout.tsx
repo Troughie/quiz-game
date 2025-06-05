@@ -11,9 +11,13 @@ const Layout = () => {
 
   useEffect(() => {
     if (!player?.id) {
-      createPlayer({ id: uuidv4(), name: randomName(), avatar: "" });
+      const newPlayer = { id: uuidv4(), name: randomName(), avatar: "" };
+      console.log(newPlayer);
+
+      createPlayer(newPlayer);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player]);
 
   return (
     <>

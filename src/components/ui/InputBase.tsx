@@ -3,12 +3,13 @@ import {
   Controller,
   useFormContext,
   type ControllerRenderProps,
+  type FieldValues,
   type Path,
   type PathValue,
 } from "react-hook-form";
 import cn from "@/HOC/cn";
 
-interface FormControllerProps<T extends Record<string, string | number>> {
+interface FormControllerProps<T extends FieldValues> {
   name: Path<T>;
   render?: (props: {
     field: ControllerRenderProps<T, Path<T>>;
@@ -18,7 +19,7 @@ interface FormControllerProps<T extends Record<string, string | number>> {
   showPassword?: boolean;
 }
 
-const Input = <T extends Record<string, string | number>>({
+const Input = <T extends FieldValues>({
   className,
   name,
   render,
@@ -38,7 +39,7 @@ const Input = <T extends Record<string, string | number>>({
   }, [value, name, setValue]);
 
   return (
-    <div className="relative h-12 group mt-4">
+    <div className={cn("relative w-full", !render && "h-12 group mt-4")}>
       <Controller
         name={name}
         control={control}
@@ -66,12 +67,19 @@ const Input = <T extends Record<string, string | number>>({
               }
         }
       />
-      {errors[name] && (
+      {!render && errors[name] && (
         <span className="mb-[-10px] text-red-500 absolute -bottom-4">
           {errors[name]?.message?.toString()}
         </span>
       )}
-      <div className="absolute inset-0 opacity-50 group-hover:opacity-100 -top-1 bg-shadow rounded-lg z-0"></div>
+      {!render && (
+        <div
+          className={cn(
+            "absolute inset-0 opacity-50 w-full group-hover:opacity-100 -top-1 bg-shadow rounded-lg z-0",
+            className
+          )}
+        ></div>
+      )}
     </div>
   );
 };
