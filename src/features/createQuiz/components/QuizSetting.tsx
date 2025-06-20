@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import InputQuiz from "./ui/Input";
-import { useQuizStore } from "../store/quizStore";
 import type { Quiz } from "../type";
 import useDebounce from "@/hooks/useDebounce";
-import { useQuizFunction } from "../functional/functional";
+import { useQuizFunction } from "../hooks/useQuizFunction";
+import { useQuizStore } from "../store/quizStore";
 
 const itemInput = [
   {
@@ -26,8 +26,8 @@ const itemInput = [
   },
 ];
 const QuizSetting = () => {
-  const { quiz } = useQuizStore();
-  const { handleInputChange, handleEditQuizApi } = useQuizFunction();
+  const { handleAChange, handleEditQuizApi, quiz, editQuiz } =
+    useQuizFunction();
   const [input, setInput] = useState<{ [key: string]: string }>({});
   const debounceValue = useDebounce(input, 2400);
   const [quizCli, setQuizCli] = useState<Partial<Quiz>>();
@@ -38,19 +38,44 @@ const QuizSetting = () => {
 
   useEffect(() => {
     if (Object.keys(debounceValue).length > 0) {
-      const updatedQuiz = handleInputChange<Quiz>(debounceValue);
+      const updatedQuiz = handleAChange<Quiz>(debounceValue);
 
       handleEditQuizApi(updatedQuiz);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounceValue]);
 
+  useEffect(() => {
+    return () => {
+      const quizChanged = useQuizStore.getState().quizChanged;
+      const quiz = getCleanQuiz();
+      if (quizChanged) {
+        handleEditQuizApi(quiz);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getCleanQuiz = () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, ...rest } = useQuizStore.getState().quiz;
+    return Object.fromEntries(
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      Object.entries(rest).filter(([_, value]) => value !== "")
+    );
+  };
+
   const handleChangeOptions = (
     e: React.ChangeEvent<HTMLTextAreaElement>,
     type: string
   ) => {
-    setInput((prev) => ({ ...prev, [type]: e.target.value }));
+    setInput((prev) => {
+      const updatedData = { ...prev, [type]: e.target.value };
+      editQuiz(updatedData);
+      return updatedData;
+    });
   };
+
   return (
     <div className="flex gap-8 flex-col ">
       {itemInput.map(({ bg, border, name, title }) => (

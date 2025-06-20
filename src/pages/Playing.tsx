@@ -21,7 +21,7 @@ interface props {
   };
 }
 const Playing = ({ playState }: props) => {
-  const { quizCurrent: quiz } = useQuizStore();
+  const { quiz } = useQuizStore();
   const {
     currentQuestion,
     playerAnswer,

@@ -29,8 +29,6 @@ const Slider = <T extends Record<string, any>>({
       const elements = Math.ceil(widthTotal / widthElement);
       const maxPage = Math.ceil(data.length / elements);
 
-      console.log(page - 1 > maxPage);
-
       if (page - 1 > maxPage) setPage(maxPage);
       setMaxPage(maxPage);
     }

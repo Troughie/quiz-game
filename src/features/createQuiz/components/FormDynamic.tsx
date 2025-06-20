@@ -3,76 +3,84 @@ import AddMedia from "./ui/AddMedia";
 import { FormProvider } from "@/context/FormContext";
 import InputQuiz from "./ui/Input";
 import {
-  ButtonSchema,
+  type BaseTypeUseQuizFunction,
+  type Options_change,
   type Question,
-  type QuizProp,
+  type quizType,
   type TypeQuizProps,
 } from "../type";
-import { useQuizStore } from "../store/quizStore";
 
-import CheckBoxSlide from "./CheckBoxSlide";
 import RangeSlide from "./RangeSlide";
-import ReorderSlide from "./ReorderSlide";
+import ReorderSlide from "./answers/ReorderSlide";
 import QuizSetting from "./QuizSetting";
-import { VALID_TYPE_CREATE } from "../constant";
-import { useQuizFunction, type Options_change } from "../functional/functional";
+import { VALID_TYPE_CREATE } from "../type/constant";
 import { usePath } from "@/hooks/usePath";
-import ButtonSlide from "./ButtonSlide";
 import Button from "@/components/ui/ButtonCustom";
 import CustomModal from "@/components/ui/Modal";
 import { useShowFunction } from "@/store/ShowFunction";
 import { NAME_SHOW } from "@/constant";
-import { useDynamicNavigate } from "@/hooks/useNavigateState";
+import { useQuizStore } from "../store/quizStore";
+import { useNavigate } from "react-router";
+import MultiAndSingleSlide from "./answers/MultiAndSingleSlide";
+import FillBankSlide from "./answers/FillBlankSlide";
+import { ButtonSchema } from "../type/Validation.Schema";
 
-type ExtraKeys = "settingQuiz";
-type CustomKeys = keyof TypeQuizProps | ExtraKeys;
-export type FormDynamicProps<T extends CustomKeys> = {
+export interface FormDynamicProps<T extends quizType>
+  extends BaseTypeUseQuizFunction {
   QType: T;
-};
+}
 
 // Memoize child components to prevent re-renders
-const MemoizedButtonSlide = React.memo(ButtonSlide);
-const MemoizedCheckBoxSlide = React.memo(CheckBoxSlide);
+const MemoizedMultiAndSingleSlide = React.memo(MultiAndSingleSlide);
 const MemoizedRangeSlide = React.memo(RangeSlide);
 const MemoizedReorderSlide = React.memo(ReorderSlide);
+const MemoizedFillBlank = React.memo(FillBankSlide);
 const MemoizedQuizSetting = React.memo(QuizSetting);
 
 const QuestionComponent = React.memo(
-  <T extends CustomKeys>({
+  <T extends quizType>({
     QType,
-    handleAnswerChange,
+    handleInputChange,
     slide,
-  }: FormDynamicProps<T> & {
-    handleAnswerChange: ({
+  }: Pick<FormDynamicProps<T>, "QType"> & {
+    handleInputChange: ({
       value,
       index,
       isCorrect,
       mode,
-      slideIdProp,
     }: Options_change) => void;
   } & { slide: Question }) => {
     const renderedComponent = useMemo(() => {
       switch (QType) {
         case "buttonSlide":
           return (
-            <MemoizedButtonSlide
-              handleAnswerChange={handleAnswerChange}
+            <MemoizedMultiAndSingleSlide
+              handleInputChange={handleInputChange}
               slide={slide}
+              QType={QType}
             />
           );
         case "checkBoxSlide":
           return (
-            <MemoizedCheckBoxSlide
-              handleAnswerChange={handleAnswerChange}
+            <MemoizedMultiAndSingleSlide
+              handleInputChange={handleInputChange}
               slide={slide}
+              QType={QType}
             />
           );
         case "rangeSlide":
           return <MemoizedRangeSlide />;
+        case "fillBlank":
+          return (
+            <MemoizedFillBlank
+              handleInputChange={handleInputChange}
+              slide={slide}
+            />
+          );
         case "reorderSlide":
           return (
             <MemoizedReorderSlide
-              handleAnswerChange={handleAnswerChange}
+              handleInputChange={handleInputChange}
               slide={slide}
             />
           );
@@ -81,7 +89,7 @@ const QuestionComponent = React.memo(
         default:
           return <span>Error!!</span>;
       }
-    }, [QType, handleAnswerChange, slide]);
+    }, [QType, handleInputChange, slide]);
 
     return renderedComponent;
   }
@@ -89,74 +97,68 @@ const QuestionComponent = React.memo(
 
 const FormDynamic = <T extends keyof TypeQuizProps>({
   QType,
+  quizFunctions,
 }: FormDynamicProps<T>) => {
+  const {
+    handleInputChange,
+    handleDeleteSlide,
+    slides,
+    currentSlideIndex,
+    setTypeQuiz,
+    selectedSlide,
+    handleEditSlide,
+    selectSlide,
+    quiz,
+    handleCreateQuiz,
+  } = quizFunctions;
   const { pathExcludeNum, pathname } = usePath();
-  const { handleAnswerChange, handleCreateQuiz, handleDeleteSlide } =
-    useQuizFunction();
-  const [slide, setSlide] = useState<Question>();
-  const { slides, setCurrentSlideIndex, currentSlideIndex, setTypeQuiz } =
-    useQuizStore();
+
+  const [slide, setSlide] = useState<Question | null>(null);
   const [question, setQuestion] = useState<string>("");
   const [funFact, setFunFact] = useState<string>("");
   const { isBoolean, setIsBoolean } = useShowFunction();
-  const navigate = useDynamicNavigate<QuizProp>();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const currentSlide = slides[currentSlideIndex];
-
-    setSlide(currentSlide);
-    setQuestion(currentSlide?.question || "");
-    setFunFact(currentSlide?.funFact || "");
-  }, [slide, currentSlideIndex, slides]);
-
-  const handleSubmit = (data: unknown) => {
-    console.log(data);
-  };
-
-  useEffect(() => {
-    const timeOutCreateQuiz = setTimeout(() => {
-      const isQuizCreated = sessionStorage.getItem("quiz_created");
-
-      if (pathExcludeNum.includes("new") && !isQuizCreated) {
-        console.log("Creating quiz...");
-        sessionStorage.setItem("quiz_created", "true");
-        handleCreateQuiz();
-      }
-    }, 2000);
-
-    return () => {
-      clearTimeout(timeOutCreateQuiz);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setSlide(selectedSlide);
+    setQuestion(selectedSlide?.question || "");
+    setFunFact(selectedSlide?.funFact || "");
+  }, [slide, currentSlideIndex, selectedSlide, QType]);
 
   const deleteSlideFunction = () => {
-    console.log(slides.length);
-
     if (slides.length === 1) {
-      if (pathExcludeNum.includes("new")) {
-        navigate(pathname, { typeQuiz: "selectType" });
-      } else {
-        navigate(pathExcludeNum, { typeQuiz: "selectType" });
-      }
       setTypeQuiz("selectType");
+      if (pathExcludeNum.includes("new")) {
+        navigate(pathname);
+      } else {
+        navigate(pathExcludeNum);
+      }
     } else {
       const newIndex: number =
         currentSlideIndex > 0 ? currentSlideIndex - 1 : 0;
       const newSlide = slides[newIndex];
       if (newSlide && newSlide?.type) {
-        sessionStorage.setItem("slideIndex", newIndex.toString());
-        navigate(pathExcludeNum + "/" + newIndex, { typeQuiz: newSlide.type });
-        setCurrentSlideIndex(newIndex);
+        setTypeQuiz(newSlide?.type);
+        navigate(pathExcludeNum + "/" + newIndex);
+        selectSlide(newIndex);
       }
     }
     handleDeleteSlide(slide?._id || "");
   };
 
-  // Don't render anything until we have the current slide data
-  if (!slide) {
-    return <div>Loading...</div>;
-  }
+  useEffect(() => {
+    if (slides.length > 1 && !quiz._id) {
+      handleCreateQuiz();
+    }
+
+    return () => {
+      const { selectedSlideChanged } = useQuizStore.getState();
+      if (selectedSlideChanged) {
+        handleEditSlide(selectedSlideChanged);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSlideIndex, slides]);
 
   return (
     <>
@@ -182,50 +184,50 @@ const FormDynamic = <T extends keyof TypeQuizProps>({
         </div>
       </CustomModal>
       <div className="flex gap-6 flex-wrap justify-center items-center md:items-start">
-        <AddMedia type={QType} handleAnswerChange={handleAnswerChange} />
-        <div className="w-[500px] pt-32 lg:pt-10 min-h-[700px] bg-black/10 px-4">
+        <AddMedia type={QType} quizFunctions={quizFunctions} />
+        <div className="w-[500px] sm:pt-6 lg:pt-10 min-h-[700px] bg-black/10 px-4">
           <FormProvider
             defaultValues={{}}
             validationSchema={ButtonSchema}
-            onSubmit={handleSubmit}
+            onSubmit={() => {}}
           >
-            <div className="py-6 relative flex flex-col justify-between gap-6 h-full">
+            <div className="py-6 relative mt-8 flex flex-col justify-between gap-6 h-full">
               {VALID_TYPE_CREATE.includes(QType) && (
                 <InputQuiz
                   maxLength={120}
-                  title="Question"
+                  placeholder="Question"
                   name="question"
                   value={question || ""}
                   onChange={(e) => {
                     setQuestion(e.target.value);
-                    handleAnswerChange({
+                    handleInputChange({
                       mode: "question",
                       value: e.target.value,
-                      slideIdProp: slide._id || "",
                     });
                   }}
                 />
               )}
 
-              <QuestionComponent
-                QType={QType}
-                handleAnswerChange={handleAnswerChange}
-                slide={slide}
-              />
+              {slide && (
+                <QuestionComponent
+                  QType={QType}
+                  handleInputChange={handleInputChange}
+                  slide={slide}
+                />
+              )}
 
               {VALID_TYPE_CREATE.includes(QType) && (
                 <InputQuiz
                   maxLength={120}
-                  title="Fun Fact"
+                  placeholder="Fun Fact"
                   name="funFact"
                   value={funFact || ""}
                   backgroundColor="bg-gray-700"
                   onChange={(e) => {
                     setFunFact(e.target.value);
-                    handleAnswerChange({
+                    handleInputChange({
                       mode: "funFact",
                       value: e.target.value,
-                      slideIdProp: slide._id || "",
                     });
                   }}
                   borderColor="border-gray-700"

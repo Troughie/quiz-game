@@ -23,7 +23,7 @@ const Lobby = () => {
   const setRoom = useLobbyStore((state) => state.setRoom);
   const players = useLobbyStore((state) => state.players);
   const setPlayers = useLobbyStore((state) => state.setPlayers);
-  const { quizCurrent } = useQuizStore();
+  const { quiz } = useQuizStore();
   const { pathname, path } = usePath();
   const { player } = usePlayerStore();
   const { isBoolean, setIsBoolean } = useShowFunction();
@@ -43,12 +43,12 @@ const Lobby = () => {
 
   useEffect(() => {
     (async () => {
-      if (path && quizCurrent) {
+      if (path && quiz) {
         const updateRoom = await createJoinOrReconnect({
           isHost,
           path,
           player,
-          idQuiz: quizCurrent?._id,
+          idQuiz: quiz?._id,
         });
         if (updateRoom) {
           sessionStorage.setItem("roomId", updateRoom.id);

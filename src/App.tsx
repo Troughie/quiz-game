@@ -15,7 +15,16 @@ import { SocketProvider } from "./context/Socket";
 
 function App() {
   const [sessionSupabase, setSessionSupabase] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
+    // Kiểm tra session hiện tại
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSessionSupabase(!!session);
+      setLoading(false);
+    });
+
+    // Lắng nghe thay đổi trạng thái đăng nhập
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSessionSupabase(!!session);
@@ -27,6 +36,7 @@ function App() {
     };
   }, []);
 
+  if (loading) return <div>Loading...</div>;
   return (
     <BrowserRouter>
       <Routes>
@@ -41,12 +51,12 @@ function App() {
 
           <Route path="detail/:title" element={<Detail />} />
           {/* Private Routes */}
-          <Route element={<PrivateRoute isAuthenticated={sessionSupabase} />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="/edit/:id/:num?" element={<CreateQuiz />} />
-            <Route path="/edit" element={<CreateQuiz />} />
-          </Route>
+        </Route>
+        <Route element={<PrivateRoute isAuthenticated={sessionSupabase} />}>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="profile" element={<Profile />} />
+          <Route path="/edit/:id/:num?" element={<CreateQuiz />} />
+          {/* <Route path="/edit" element={<CreateQuiz />} /> */}
         </Route>
         <Route
           path="play/:title"

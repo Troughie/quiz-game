@@ -1,70 +1,132 @@
 import { create } from "zustand";
-import type { Question, QuestionType, Quiz, quizType } from "../type";
-import { createJSONStorage, persist } from "zustand/middleware";
+import type {
+  ActionClient,
+  Question,
+  QuestionType,
+  Quiz,
+  quizType,
+} from "../type";
+import { persist } from "zustand/middleware";
+import { applySlideAction, type UpdateAction } from "../utils";
 
 interface QuizStore {
   quiz: Quiz;
-  quizCurrent: Quiz;
+  selectedSlide: Question | null;
   slides: Question[];
   currentSlideIndex: number;
-  slideChanged: Partial<Question> | undefined;
-  isChanged: boolean;
-  slideId?: string;
-  indexAnswer?: number;
-  typeQuiz?: quizType;
-  editQuizCurrent: (quiz: Partial<Quiz>) => void;
+  isUserTyping: boolean;
+  typeQuiz: quizType;
+  selectedSlideChanged: Partial<Question> | null;
+
+  quizChanged: boolean;
+  lastSavedAt?: number;
+  action: ActionClient | null;
+
   setTypeQuiz: (type: quizType) => void;
-  setIndexAnswer: (indexAnswer?: number) => void;
-  setSlideId: (slideId?: string) => void;
-  setIsChanged: (isChanged: boolean) => void;
-  addSlides: (slides: Question[]) => void;
-  getSlide: () => Question;
+
+  selectSlide: (slideIndex: number) => void;
+  setCurrentSlideIndex: (index: number) => void;
+
+  editSlide: (type: UpdateAction, slideIndex?: number | string) => void;
+  editCurrentSlide: (type: UpdateAction) => void;
+
   addSlide: (slide: QuestionType) => void;
+  addSlides: (slides: Question[]) => void;
+
+  setIsUserTyping: (isUserTyping: boolean) => void;
   removeSlide: (slideId: string) => void;
   editQuiz: (quiz: Partial<Quiz>) => void;
-  editSlides: (slide: Partial<Question>, slideId?: string | number) => void;
-  setSlideChanged: (slides?: Partial<Question>) => void;
-  setCurrentSlideIndex: (index: number) => void;
+
+  resetQuizChanged: () => void;
+  markAsSaved: () => void;
   reset: () => void;
 }
 
 export const useQuizStore = create<QuizStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       quiz: { _id: "", name: "", description: "", media: "", tags: [] },
-      quizCurrent: { _id: "", name: "", description: "", media: "", tags: [] },
       slides: [],
       currentSlideIndex: 0,
-      isChanged: false,
-      indexAnswer: undefined,
-      typeQuiz: undefined,
+      isUserTyping: false,
+      typeQuiz: "selectType",
       slideChanged: undefined,
-      slideId: undefined,
+      selectedSlide: null,
+      selectedSlideChanged: null,
+      quizChanged: false,
+      action: null,
+
       setTypeQuiz: (type: quizType) => set(() => ({ typeQuiz: type })),
-      setIndexAnswer: (indexAnswer?: number) => set(() => ({ indexAnswer })),
-      setIsChanged: (isChanged: boolean) => set(() => ({ isChanged })),
-      addSlides: (slides: Question[]) => set(() => ({ slides })),
-      setSlideId: (slideId?: string) => set(() => ({ slideId })),
-      setSlideChanged: (slides?: Partial<Question>) =>
+
+      editSlide: (type: UpdateAction, slideIndex?: number | string) =>
         set((state) => {
-          if (slides === undefined) {
-            return { slideChanged: undefined };
-          }
+          const updatedSlides = state.slides.map((slide) => {
+            const slideFounded =
+              slide.index === slideIndex || slide._id === slideIndex;
+            if (!slideFounded) return slide;
+
+            const updatedSlide = applySlideAction(slide, type);
+
+            return updatedSlide;
+          });
+
           return {
-            slideChanged: {
-              ...state.slideChanged,
-              ...slides,
-            },
+            slides: updatedSlides,
           };
         }),
-      getSlide: () => {
-        const state = get();
-        const currentSlide = state.slides[state.currentSlideIndex];
-        if (!currentSlide) return {} as Question;
-        return { ...currentSlide };
-      },
+
+      editCurrentSlide: (type: UpdateAction) =>
+        set((state) => {
+          const currentSlide = state.selectedSlide;
+          if (!currentSlide) return {};
+
+          const updatedSlide = applySlideAction(currentSlide, type);
+
+          return {
+            selectedSlide: updatedSlide,
+            selectedSlideChanged: updatedSlide,
+            action: type.type,
+          };
+        }),
+
+      markAsSaved: () =>
+        set({
+          selectedSlideChanged: null,
+          lastSavedAt: Date.now(),
+          action: null,
+        }),
+      setIsUserTyping: (isUserTyping: boolean) => set(() => ({ isUserTyping })),
+      addSlides: (slides) =>
+        set((state) => {
+          const currentIndex = state.currentSlideIndex;
+          return {
+            slides,
+            // Reset selection nếu slides mới
+            selectedSlide: slides[currentIndex],
+            currentSlideIndex: currentIndex,
+          };
+        }),
+
       addSlide: (slide: QuestionType) =>
-        set((state) => ({ slides: [...state.slides, slide] })),
+        set((state) => ({
+          slides: [...state.slides, slide],
+          selectedSlide: slide,
+          currentSlideIndex: slide.index,
+        })),
+
+      selectSlide: (slideIndex: number) =>
+        set((state) => {
+          if (slideIndex < 0 || slideIndex >= state.slides.length) {
+            console.warn(`Invalid slide index: ${slideIndex}`);
+            return {};
+          }
+
+          return {
+            currentSlideIndex: slideIndex,
+            selectedSlide: state.slides[slideIndex],
+          };
+        }),
+
       removeSlide: (slideId: string) =>
         set((state) => {
           const Slides = [...state.slides];
@@ -73,44 +135,12 @@ export const useQuizStore = create<QuizStore>()(
         }),
       setCurrentSlideIndex: (index: number) =>
         set(() => ({ currentSlideIndex: index })),
+      resetQuizChanged: () => set(() => ({ quizChanged: false })),
       editQuiz: (quiz: Partial<Quiz>) =>
         set((state) => ({
           quiz: { ...state.quiz, ...quiz },
+          quizChanged: true,
         })),
-      editQuizCurrent: (quiz: Partial<Quiz>) =>
-        set((state) => ({
-          quizCurrent: { ...state.quiz, ...quiz },
-        })),
-      editSlides: (updatedData: Partial<Question>, slideId?: string | number) =>
-        set((state) => {
-          const updatedSlides = state.slides.map((slide) => {
-            const isMatched =
-              (typeof slideId === "string" && slide._id === slideId) ||
-              (typeof slideId === "number" && slide.index === slideId);
-
-            if (!isMatched) return slide;
-
-            const updatedSlide = {
-              ...slide,
-              ...updatedData,
-            };
-
-            if (updatedData.answers && Array.isArray(updatedData.answers)) {
-              updatedSlide.answers = updatedData.answers.map((ans, i) => {
-                if (!ans)
-                  return slide.answers?.[i] || { text: "", isCorrect: false };
-                return { ...slide.answers?.[i], ...ans };
-              });
-            }
-
-            return updatedSlide;
-          });
-
-          return {
-            slides: [...updatedSlides],
-          };
-        }),
-
       reset: () =>
         set(() => ({
           quiz: { _id: "", name: "", description: "", media: "", tags: [] },
@@ -120,9 +150,11 @@ export const useQuizStore = create<QuizStore>()(
     }),
     {
       name: "quiz-storage",
-      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
-        quizCurrent: state.quizCurrent,
+        quiz: state.quiz,
+        slides: state.slides,
+        currentSlideIndex: state.currentSlideIndex,
+        lastSavedAt: state.lastSavedAt,
       }),
     }
   )

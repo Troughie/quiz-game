@@ -1,9 +1,11 @@
-import { useDynamicNavigate } from "@/hooks/useNavigateState";
-import { type QuizProp, type SlideType, type SlideTypeProp } from "../type";
-import { useLocation } from "react-router";
-import { useQuizStore } from "../store/quizStore";
+import {
+  type BaseTypeUseQuizFunction,
+  type SlideType,
+  type SlideTypeProp,
+} from "../type";
 import { createSlide } from "@/helper";
-import { useQuizFunction } from "../functional/functional";
+import { usePath } from "@/hooks/usePath";
+import { useNavigate } from "react-router";
 const slidesDataType: SlideTypeProp[] = [
   {
     type: "buttonSlide",
@@ -25,64 +27,71 @@ const slidesDataType: SlideTypeProp[] = [
     name: "Range",
     description: "Guess the answer on a scale",
   },
+  {
+    type: "fillBlank",
+    name: "Fill in the Blank",
+    description: "Complete the sentence with the correct word",
+  },
 ];
-const SelectSlide = () => {
-  const navigate = useDynamicNavigate<QuizProp>();
-  const { pathname } = useLocation();
-  const { handleCreateSlide } = useQuizFunction();
+
+const SelectSlide = ({ quizFunctions }: BaseTypeUseQuizFunction) => {
+  const navigate = useNavigate();
+  const { pathname } = usePath();
   const {
     addSlide,
     slides,
     setCurrentSlideIndex,
     currentSlideIndex,
     setTypeQuiz,
-  } = useQuizStore();
+    quiz,
+  } = quizFunctions;
 
-  const handleNavigateSlide = (slideType: SlideType) => {
-    const storedQuizId = sessionStorage.getItem("quizId");
+  const handleNavigateSlide = async (slideType: SlideType) => {
     const newSlide = createSlide(slideType);
-    setTypeQuiz(slideType);
+    const newIndex = getNewIndexSlide();
+    newSlide.index = newIndex;
     // Add slide to the collection
+    setTypeQuiz(slideType);
     addSlide(newSlide);
 
-    // Update slide index if we have a quiz ID
-    if (storedQuizId) {
-      newSlide.index = slides.length;
-      handleCreateSlide(newSlide);
-    }
-
     // Handle navigation
-    if (storedQuizId && slides.length > 0) {
-      handleExistingQuizNavigation(storedQuizId, slideType);
+    if (quiz._id && slides.length > 0) {
+      handleExistingQuizNavigation(quiz._id);
     } else {
-      handleNewQuizNavigation(slideType);
+      handleNewQuizNavigation();
     }
   };
 
   // Helper function for navigation within existing quizzes
-  const handleExistingQuizNavigation = (
-    quizId: string,
-    slideType: SlideType
-  ) => {
-    const currentPath = pathname.split("/").slice(0, -1).join("/");
-    const newPath = `${currentPath}/${quizId}/${slides.length}`;
+  const handleExistingQuizNavigation = (quizId: string) => {
+    const currentPath = pathname.includes("new")
+      ? pathname.split("/").slice(0, -1).join("/")
+      : "/edit";
 
-    navigate(newPath, { typeQuiz: slideType });
+    const newPath = `${currentPath}/${quizId}/${slides.length}`;
+    navigate(newPath);
 
     // Update current slide index
+    const newIndex = getNewIndexSlide();
+    setCurrentSlideIndex(newIndex);
+  };
+
+  const getNewIndexSlide = () => {
+    let newIndex;
     if (currentSlideIndex === slides.length - 1) {
-      setCurrentSlideIndex(currentSlideIndex + 1);
+      newIndex = currentSlideIndex + 1;
     } else {
-      setCurrentSlideIndex(slides.length);
+      newIndex = slides.length;
     }
+    return newIndex;
   };
 
   // Helper function for navigation with new quizzes
-  const handleNewQuizNavigation = (slideType: SlideType) => {
+  const handleNewQuizNavigation = () => {
+    const newIndex = getNewIndexSlide();
     if (pathname.includes("new")) {
-      navigate(pathname, { typeQuiz: slideType });
-    } else {
-      navigate(pathname + "/0", { typeQuiz: slideType });
+      const newPath = newIndex === 0 ? "" : "/" + newIndex;
+      navigate(pathname + newPath);
     }
   };
 

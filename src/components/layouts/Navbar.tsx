@@ -62,7 +62,6 @@ interface RightNavbarProps {
 }
 const RightNavbar = ({ session }: RightNavbarProps) => {
   const navigate = useNavigate();
-  console.log(session);
 
   const buttonSignIn = () => {
     if (!session) {
@@ -124,10 +123,6 @@ const Navbar = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { session } = useAuth();
-
-  useEffect(() => {
-    console.log(session);
-  }, [session]);
 
   const handleSearch = (event: React.MouseEvent) => {
     event.stopPropagation();

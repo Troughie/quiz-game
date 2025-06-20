@@ -3,19 +3,19 @@ import NavHome from "@/components/layouts/NavHome";
 import Slider from "@/components/layouts/Slider";
 import Button from "@/components/ui/ButtonCustom";
 import { useQuizStore } from "@/features/createQuiz/store/quizStore";
-import { type QuizProp } from "@/features/createQuiz/type";
 import { useHomeFunction } from "@/features/home/functional/getRequest";
-import { useDynamicNavigate } from "@/hooks/useNavigateState";
 import { useSessionStorage } from "@/hooks/useSessionStorage";
+import { useNavigate } from "react-router";
 
 const Home = () => {
-  const { reset } = useQuizStore();
-  const navigate = useDynamicNavigate<QuizProp>();
+  const { reset, setTypeQuiz } = useQuizStore();
+  const navigate = useNavigate();
   const { remove } = useSessionStorage<string | null>("quizId", null);
   const { quizzes } = useHomeFunction();
   const handleEditQuiz = () => {
     reset();
-    navigate("/edit/new", { typeQuiz: "selectType" });
+    setTypeQuiz("selectType");
+    navigate("/edit/new");
     sessionStorage.removeItem("quiz_created");
     remove();
   };

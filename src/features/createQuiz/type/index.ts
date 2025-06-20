@@ -1,5 +1,5 @@
-import * as yup from "yup";
-import { BASE_ANSWERS } from "../constant";
+import { BASE_ANSWERS } from "./constant";
+import type { useQuizFunction } from "../hooks/useQuizFunction";
 
 // === Shared Interfaces ===
 
@@ -9,12 +9,13 @@ export interface Quiz {
   description: string;
   media: string;
   tags: string[];
-  slides?: Question[];
+  slides?: Question[] | Question;
 }
 
 export interface Answer {
-  text: string;
+  text?: string;
   isCorrect: boolean;
+  image?: string;
 }
 
 export interface Question {
@@ -42,22 +43,15 @@ export interface SlideTypeProp {
   name: string;
 }
 
-export interface QuizProp {
-  typeQuiz: quizType;
-}
-
-// === Specific Slide Question Types ===
-
-export interface SlideProps {
-  QType?: keyof TypeQuizProps;
-}
-
 export interface QuestionButton extends Question {
   type: "buttonSlide";
 }
 
 export interface QuestionCheckBox extends Question {
   type: "checkBoxSlide";
+}
+export interface QuestionFillBlank extends Question {
+  type: "fillBlank";
 }
 
 export interface QuestionReorder extends Question {
@@ -72,13 +66,6 @@ export interface QuestionRange extends Question {
 }
 
 // === Type Mapping for Slide Quiz ===
-
-export type TypeQuizProps = {
-  buttonSlide: QuestionButton;
-  checkBoxSlide: QuestionCheckBox;
-  rangeSlide: QuestionRange;
-  reorderSlide: QuestionReorder;
-};
 
 export const slideFactory = {
   buttonSlide: (): QuestionButton => ({
@@ -99,6 +86,12 @@ export const slideFactory = {
     answers: [...BASE_ANSWERS],
     index: 0,
   }),
+  fillBlank: () => ({
+    type: "fillBlank",
+    question: "",
+    answers: [{ text: "", isCorrect: true }],
+    index: 0,
+  }),
   rangeSlide: (): QuestionRange => ({
     type: "rangeSlide",
     question: "",
@@ -109,21 +102,64 @@ export const slideFactory = {
   }),
 };
 
-export type GetSlideByType<T extends keyof TypeQuizProps> = TypeQuizProps[T];
+export type ActionClient = "DELETE_ANSWER" | "UPDATE";
+
+export const SLIDE_TYPES = {
+  buttonSlide: true,
+  checkBoxSlide: true,
+  rangeSlide: true,
+  reorderSlide: true,
+  fillBlank: true,
+  settingQuiz: false,
+} as const;
+
+export type TypeQuizProps = {
+  buttonSlide: QuestionButton;
+  checkBoxSlide: QuestionCheckBox;
+  rangeSlide: QuestionRange;
+  reorderSlide: QuestionReorder;
+  fillBlank: QuestionFillBlank;
+};
 export type QuestionType =
   | QuestionButton
   | QuestionCheckBox
   | QuestionReorder
-  | QuestionRange;
+  | QuestionRange
+  | QuestionFillBlank;
 
-export type ModeSlide = "edit" | "create";
-// === Example Schema for Button Slide ===
+export interface BaseTypeUseQuizFunction {
+  quizFunctions: ReturnType<typeof useQuizFunction>;
+}
+type slideMode = "answers" | "question" | "funFact" | "media";
+type QuizMode = "name" | "description" | "media" | "tag";
+export interface Options_change {
+  value: string;
+  index?: number;
+  isCorrect?: boolean;
+  mode: slideMode | QuizMode;
+}
 
-export const ButtonSchema = yup.object().shape({
-  question: yup.string().required("Question is required"),
-  correctAnswer: yup.string().required("Correct answer is required"),
-  wrongAnswers: yup
-    .array()
-    .of(yup.string().required("Wrong answer cannot be empty"))
-    .min(1, "At least one wrong answer is required"),
-});
+export interface slideProps {
+  handleInputChange: ({
+    value,
+    index,
+    isCorrect,
+    mode,
+  }: Options_change) => void;
+  slide: Question;
+}
+
+export interface NavigationParams {
+  type: NavigationType;
+  slideIndex?: number;
+  quizId?: string;
+  replaceUrl?: boolean;
+  delay?: number;
+}
+
+export enum NavigationType {
+  QUIZ_SLIDE = "quiz_slide",
+  SELECT_TYPE = "select_type",
+  SETTING = "setting",
+  REDIRECT_NEW_TO_ID = "redirect_new_to_id",
+}

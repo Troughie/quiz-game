@@ -15,6 +15,5 @@ export const useHomeFunction = () => {
     queryKey: ["home"],
     queryFn: fetchHomeQuizzes,
   });
-  console.log(data?.data);
   return { quizzes: data?.data || { myQuiz: [], recentlyPublished: [] } };
 };

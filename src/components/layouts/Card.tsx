@@ -8,17 +8,17 @@ import { useQuizStore } from "@/features/createQuiz/store/quizStore";
 const Card = React.forwardRef<HTMLDivElement, Quiz>(
   ({ _id, name, ...quizState }, ref) => {
     const navigate = useNavigate();
-    const { quizCurrent, editQuizCurrent } = useQuizStore();
+    const { quiz, editQuiz } = useQuizStore();
     const handleClick = () => {
       console.log(_id);
 
-      if (!quizCurrent?._id || (quizCurrent?._id && quizCurrent?._id === _id)) {
+      if (!quiz?._id || (quiz?._id && quiz?._id === _id)) {
         const newQuiz: Quiz = {
           _id,
           name,
           ...quizState,
         };
-        editQuizCurrent(newQuiz);
+        editQuiz(newQuiz);
         navigate(`/play/${_id}`);
       }
     };

@@ -1,28 +1,29 @@
-import { useQuizStore } from "../../store/quizStore";
 import SlideFooterPreview from "./SlideFooterPreview";
-import { useDynamicNavigate } from "@/hooks/useNavigateState";
-import type { Question, QuizProp, quizType } from "../../type";
-import { useQuizFunction } from "../../functional/functional";
+import {
+  NavigationType,
+  type BaseTypeUseQuizFunction,
+  type Question,
+  type quizType,
+} from "../../type";
 import { usePath } from "@/hooks/usePath";
-import { useGetSlides } from "../../functional/getRequest";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/ButtonCustom";
+import { useGetSlides } from "../../hooks/getRequest";
+import { useHandleNavigation } from "../../hooks/useNavigate";
 
-const Footer = () => {
+const Footer = ({ quizFunctions }: BaseTypeUseQuizFunction) => {
   const {
     slides,
-    setCurrentSlideIndex,
     quiz,
     addSlides,
-    currentSlideIndex,
+    typeQuiz,
     setTypeQuiz,
-  } = useQuizStore();
-  const navigate = useDynamicNavigate<QuizProp>();
-  const { handleCreateQuiz } = useQuizFunction();
-  const { path, pathExcludeNum } = usePath();
-
-  const quizId = useMemo(() => sessionStorage.getItem("quizId") || "", []);
-  const { slides: slidesApi, isFetching } = useGetSlides(quizId);
+    selectSlide,
+    selectedSlide,
+  } = quizFunctions;
+  const { path } = usePath();
+  const handleNavigation = useHandleNavigation();
+  const { slides: slidesApi, isFetching } = useGetSlides(quiz._id);
 
   const [slidesCli, setSlidesCli] = useState<Question[]>();
 
@@ -31,13 +32,8 @@ const Footer = () => {
   }, [slides]);
 
   useEffect(() => {
-    const slideIndex = sessionStorage.getItem("slideIndex");
-
     if (!isFetching) {
       if (slides.length === 0 && slidesApi.length > 0) {
-        if (slideIndex && !currentSlideIndex) {
-          setCurrentSlideIndex(parseInt(slideIndex));
-        }
         setSlidesCli(slidesApi);
         addSlides(slidesApi);
       }
@@ -47,37 +43,46 @@ const Footer = () => {
 
   const handleClickSlides = (index: number, type: quizType | undefined) => {
     if (type) {
-      sessionStorage.setItem("slideIndex", index.toString());
       setTypeQuiz(type);
-      setCurrentSlideIndex(index);
+      selectSlide(index);
+
       if (quiz._id) {
-        navigate("/edit/" + quiz._id + "/" + index, { typeQuiz: type });
+        handleNavigation({
+          type: NavigationType.QUIZ_SLIDE,
+          slideIndex: index,
+          quizId: quiz._id,
+        });
       } else {
-        navigate(pathExcludeNum + "/" + index, { typeQuiz: type });
+        handleNavigation({
+          type: NavigationType.QUIZ_SLIDE,
+          slideIndex: index,
+        });
       }
     }
   };
 
   const isActive = (index: number) => {
+    if (path === "new" && slides.length === 1) return true;
+    if (isNaN(Number(path))) return false;
+    if (path === "setting") {
+      return false;
+    }
     if (path && Number.isNaN(parseInt(path))) {
       return index === 0;
     }
-    return index === parseInt(path || "0");
+    return index === parseInt(path ?? "");
   };
 
   const handleClickAddSlide = () => {
-    const quizId = sessionStorage.getItem("quizId");
-    setTypeQuiz("selectType");
-    if (!quizId && !quiz?._id) {
-      sessionStorage.setItem("quiz_created", "true");
-      handleCreateQuiz();
-    }
-    navigate(pathExcludeNum, { typeQuiz: "selectType" });
+    handleNavigation({
+      type: NavigationType.SELECT_TYPE,
+    });
   };
 
   const handleClickSetting = () => {
-    setTypeQuiz("settingQuiz");
-    navigate(pathExcludeNum, { typeQuiz: "settingQuiz" });
+    handleNavigation({
+      type: NavigationType.SETTING,
+    });
   };
 
   return (
@@ -89,12 +94,17 @@ const Footer = () => {
       ></Button>
       <ul className="flex gap-2 self-center w-full items-center overflow-x-auto overflow-y-hidden whitespace-nowrap max-w-full min-w-[300px] px-2">
         {slidesCli?.map((slide, index) => {
+          const currentSlide = selectedSlide?.index === slide.index;
           return (
             <SlideFooterPreview
               key={index}
-              question={slides[index]?.question || slide?.question || ""}
+              question={
+                currentSlide
+                  ? selectedSlide?.question ?? ""
+                  : slide?.question ?? ""
+              }
               index={index + 1}
-              img={slides[index]?.media || slide.media}
+              img={currentSlide ? selectedSlide?.media : slide.media}
               isActive={isActive(index)}
               onClick={() => handleClickSlides(index, slide.type)}
             />
@@ -104,6 +114,7 @@ const Footer = () => {
       <Button
         text="Add slide"
         variant="primary"
+        disabled={typeQuiz === "selectType" || !typeQuiz}
         onClick={handleClickAddSlide}
       />
     </div>
