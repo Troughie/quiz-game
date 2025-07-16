@@ -1,51 +1,62 @@
+import { useQuizStore } from "./store/quizStore";
 import type { Question } from "./type";
 
 export const updateSlideAnswers = (
-  currentSlide: Question,
-  updates: Partial<Question>
+    currentSlide: Question,
+    updates: Partial<Question>
 ) => {
-  const updatedSlide = { ...currentSlide, ...updates };
+    const updatedSlide = { ...currentSlide, ...updates };
 
-  if (updates.answers && Array.isArray(updates.answers)) {
-    updatedSlide.answers = updates.answers.map((answerUpdate, index) => {
-      const existingAnswer = currentSlide.answers?.[index];
-      if (!answerUpdate) {
-        return existingAnswer || { text: "", isCorrect: false };
-      }
-      return { ...existingAnswer, ...answerUpdate };
-    });
-  }
+    if (updates.answers && Array.isArray(updates.answers)) {
+        updatedSlide.answers = updates.answers.map((answerUpdate, index) => {
+            const existingAnswer = currentSlide.answers?.[index];
+            if (!answerUpdate) {
+                return existingAnswer || { text: "", isCorrect: false };
+            }
+            return { ...existingAnswer, ...answerUpdate };
+        });
+    }
 
-  return updatedSlide;
+    return updatedSlide;
 };
 
 export const deleteSlideAnswer = (
-  currentSlide: Question,
-  answerIndex: number
+    currentSlide: Question,
+    answerIndex: number
 ) => {
-  return {
-    ...currentSlide,
-    answers:
-      currentSlide.answers?.filter((_, index) => index !== answerIndex) || [],
-  };
+    return {
+        ...currentSlide,
+        answers:
+            currentSlide.answers?.filter((_, index) => index !== answerIndex) ||
+            [],
+    };
 };
 
 export type UpdateAction =
-  | { type: "UPDATE"; updates: Partial<Question> }
-  | { type: "DELETE_ANSWER"; index: number };
+    | { type: "UPDATE"; updates: Partial<Question> }
+    | { type: "DELETE_ANSWER"; index: number };
 
 export const applySlideAction = (
-  currentSlide: Question,
-  action: UpdateAction
+    currentSlide: Question,
+    action: UpdateAction
 ) => {
-  switch (action.type) {
-    case "UPDATE":
-      return updateSlideAnswers(currentSlide, action.updates);
+    switch (action.type) {
+        case "UPDATE":
+            return updateSlideAnswers(currentSlide, action.updates);
 
-    case "DELETE_ANSWER":
-      return deleteSlideAnswer(currentSlide, action.index);
+        case "DELETE_ANSWER":
+            return deleteSlideAnswer(currentSlide, action.index);
 
-    default:
-      return currentSlide;
-  }
+        default:
+            return currentSlide;
+    }
+};
+
+export const getCleanQuiz = () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _id, ...rest } = useQuizStore.getState().quiz;
+    return Object.fromEntries(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        Object.entries(rest).filter(([_, value]) => value !== "")
+    );
 };

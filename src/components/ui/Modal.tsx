@@ -29,6 +29,7 @@ interface CustomModalProps {
   centered?: boolean;
   closeOnEsc?: boolean;
   closeOnOverlayClick?: boolean;
+  showBtn?: boolean;
 }
 
 const CustomModal: React.FC<CustomModalProps> = ({
@@ -51,6 +52,7 @@ const CustomModal: React.FC<CustomModalProps> = ({
   centered = true,
   closeOnEsc = true,
   closeOnOverlayClick = true,
+  showBtn = true,
 }) => {
   // State local nếu không dùng controlled mode
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -182,26 +184,30 @@ const CustomModal: React.FC<CustomModalProps> = ({
             <div className="mb-6">{children}</div>
 
             {/* Footer */}
-            <div className={`flex justify-center space-x-4 ${footerClassName}`}>
-              <Button
-                text={cancelText}
-                {...cancelButtonProps}
-                onClick={handleCancel}
-                className={`px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 ${
-                  cancelButtonProps?.className || ""
-                }`}
-              />
+            {showBtn && (
+              <div
+                className={`flex justify-center space-x-4 ${footerClassName}`}
+              >
+                <Button
+                  text={cancelText}
+                  {...cancelButtonProps}
+                  onClick={handleCancel}
+                  className={`px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 ${
+                    cancelButtonProps?.className || ""
+                  }`}
+                />
 
-              <Button
-                text={loading ? "Loading..." : confirmText}
-                {...confirmButtonProps}
-                onClick={handleConfirm}
-                disabled={loading || confirmButtonProps?.disabled}
-                className={`px-4 py-2 rounded-md border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  loading ? "opacity-70 cursor-not-allowed" : ""
-                } ${confirmButtonProps?.className || ""}`}
-              />
-            </div>
+                <Button
+                  text={loading ? "Loading..." : confirmText}
+                  {...confirmButtonProps}
+                  onClick={handleConfirm}
+                  disabled={loading || confirmButtonProps?.disabled}
+                  className={`px-4 py-2 rounded-md border border-transparent bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    loading ? "opacity-70 cursor-not-allowed" : ""
+                  } ${confirmButtonProps?.className || ""}`}
+                />
+              </div>
+            )}
           </div>
         </div>,
         document.body

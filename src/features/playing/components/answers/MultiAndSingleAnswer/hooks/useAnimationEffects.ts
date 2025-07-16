@@ -1,6 +1,6 @@
 import type { AnimationControls } from "framer-motion";
 import { useEffect } from "react";
-import type { AnimationState } from "../../constant";
+import type { AnimationState } from "../../../../constant";
 
 export function useAnimationEffects({
   isPause,
@@ -50,9 +50,6 @@ export function useAnimationEffects({
   // Indicator animation effect
   useEffect(() => {
     if (!isPause && shouldShowIndicator) {
-      console.log(
-        `Triggering indicator for answer ${index}: isCorrect=${isAnswerCorrect}, isSelected=${isSelected}`
-      );
       indicatorControls.start({ scale: 1 });
     }
   }, [

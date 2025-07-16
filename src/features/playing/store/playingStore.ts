@@ -1,237 +1,278 @@
 import { create } from "zustand";
 import type {
-  GamePhase,
-  GameUpdate,
-  Question,
-  PlayerScore,
+    GamePhase,
+    GameUpdate,
+    PlayerScore,
+    BaseGameState,
 } from "@/features/playing/types/Index";
 
-interface GameState {
-  phase: GamePhase;
-  currentQuestion?: Question;
-  currentQuestionNumber?: number;
-  totalQuestions?: number;
-  showPreQuestion: boolean;
-  playerAnswer: PlayerScore[];
-  playerCorrect: PlayerScore[];
-  playerCount: number;
-  countdownStartTime?: number;
-  countdownDuration?: number;
-  showingAnswer: boolean;
-  showingFunfact: boolean;
-  showingScoreboard: boolean;
-  showingVote: boolean;
-  correctAnswer: number[];
-  currentFunfact?: string;
-  startAt?: number;
-  isPaused: boolean;
-  startCountdown: boolean;
-  skipCountdown: boolean;
-  serverTimeOffset: number;
-  remainingTime?: number;
-  countdownSpeed: number;
+export interface GameState extends BaseGameState {
+    phase: GamePhase;
+    showPreQuestion: boolean;
+    playerAnswer: PlayerScore[];
+    playerCorrect: PlayerScore[];
+    showAnswer: boolean;
+    showMedia: boolean;
+    showingAnswerCorrect: boolean;
+    showingFunfact: boolean;
+    showingScoreboard: boolean;
+    showingLastQuestion: boolean;
+    showingVote: boolean;
+    isPaused: boolean;
+    startCountdown: boolean;
+    skipCountdown: boolean;
+    serverTimeOffset: number;
+    countdownSpeed: number;
+    isCorrectAnswerFillBlank?: boolean;
+    textPlayerAnswer: string[];
+    isLastQuestion: boolean;
+    isHost: boolean;
 }
 
 export interface PlayingStore extends GameState {
-  handleGameUpdate: (update: GameUpdate) => void;
-  resetGame: () => void;
-  resetQuestion: () => void;
-  getSyncedTime: () => number;
-  setScore: (player: PlayerScore) => void;
+    handleGameUpdate: (update: GameUpdate) => void;
+    resetGame: () => void;
+    resetQuestion: () => void;
+    getSyncedTime: () => number;
+    resetStateFillBlank: () => void;
 }
 
 export const usePlayingStore = create<PlayingStore>((set, get) => ({
-  // Initial state
-  phase: "WAITING",
-  correctAnswer: [],
-  playerAnswer: [],
-  playerCount: 0,
-  playerCorrect: [],
-  showingAnswer: false,
-  showPreQuestion: false,
-  showingFunfact: false,
-  showingScoreboard: false,
-  showingVote: false,
-  isPaused: false,
-  startCountdown: false,
-  skipCountdown: false,
-  serverTimeOffset: 0,
-  countdownSpeed: 1,
+    // Initial state
+    phase: "WAITING",
+    correctIndexes: [],
+    playerAnswer: [],
+    totalPlayers: 0,
+    playerCorrect: [],
+    showingAnswerCorrect: false,
+    showPreQuestion: false,
+    showingFunfact: false,
+    showingScoreboard: false,
+    showingVote: false,
+    isPaused: false,
+    startCountdown: false,
+    skipCountdown: false,
+    serverTimeOffset: 0,
+    countdownSpeed: 1,
+    showAnswer: false,
+    showMedia: false,
+    textPlayerAnswer: [],
+    countDownDuration: 15000,
+    isLastQuestion: false,
+    showingLastQuestion: false,
+    isHost: false,
 
-  handleGameUpdate: (update) => {
-    const state = get();
-    console.log(update.type);
+    handleGameUpdate: (update) => {
+        const state = get();
+        console.log(update.type);
 
-    switch (update.type) {
-      case "START_GAME":
+        switch (update.type) {
+            case "START_GAME":
+                state.resetGame();
+                set({
+                    phase: "IN_PROGRESS",
+                    totalQuestions: update.totalQuestions,
+                    showPreQuestion: true,
+                    totalPlayers: update.totalPlayers,
+                    isHost: update.isHost,
+                });
+                break;
+
+            case "PRE_QUESTION":
+                set({ showPreQuestion: false });
+                break;
+
+            case "DISPLAY_QUESTION":
+                if (update.currentQuestion) {
+                    set({
+                        currentQuestion: update.currentQuestion,
+                        currentQuestionNumber: update.currentQuestionNumber,
+                        showingAnswerCorrect: false,
+                        showingFunfact: false,
+                        showingScoreboard: false,
+                        showingLastQuestion: false,
+                        countDownDuration: update.countDownDuration,
+                    });
+                }
+                break;
+            case "SHOW_ANSWER_QUESTION": {
+                set({
+                    showAnswer: true,
+                });
+                break;
+            }
+
+            case "DISPLAY_MEDIA": {
+                set({
+                    showMedia: true,
+                    currentMedia: update.currentMedia,
+                });
+                break;
+            }
+
+            case "START_COUNTDOWN":
+                {
+                    const serverTime = update.serverTime || Date.now();
+                    const clientTime = Date.now();
+                    const offset = serverTime - clientTime;
+                    set({
+                        serverTimeOffset: offset,
+                        startAt: update.startAt,
+                        startCountdown: true,
+                        skipCountdown: false,
+                    });
+                }
+                break;
+            case "SKIP_COUNTDOWN":
+                set({
+                    skipCountdown: true,
+                    countdownSpeed: 10,
+                });
+                break;
+
+            case "LAST_QUESTION":
+                set({ isLastQuestion: true, showingLastQuestion: true });
+                setTimeout(() => {
+                    set({ showingLastQuestion: false });
+                }, 3000);
+                break;
+            case "SHOW_ANSWER_CORRECT":
+                set({
+                    showingAnswerCorrect: true,
+                    showingFunfact: false,
+                    showingScoreboard: false,
+                    playerCorrect: update.players,
+                    correctIndexes: update.correctIndexes,
+                    correctText: update.correctText,
+                });
+                break;
+
+            case "DISPLAY_FUNFACT":
+                set({
+                    showingFunfact: true,
+                    showingScoreboard: false,
+                    currentFunfact: update.currentFunfact,
+                });
+                break;
+
+            case "DISPLAY_SCOREBOARD":
+                set({
+                    currentQuestion: undefined,
+                    showingFunfact: false,
+                    showingScoreboard: true,
+                    playerAnswer: update.players || [],
+                });
+                break;
+            case "PAUSE_GAME":
+                set({
+                    isPaused: true,
+                });
+                break;
+            case "RESUME_GAME":
+                set({
+                    isPaused: false,
+                    startAt: update.startAt,
+                    serverTimeOffset:
+                        (update.serverTime || Date.now()) - Date.now(),
+                });
+                break;
+            case "GAME_END":
+                set({
+                    showingAnswerCorrect: false,
+                    showingFunfact: false,
+                    phase: "FINISHED",
+                });
+
+                break;
+            case "ANSWER_RESULT":
+                set({
+                    textPlayerAnswer: [
+                        ...state.textPlayerAnswer,
+                        update.textPlayerAnswer,
+                    ],
+                    ...(update.isCorrectAnswerFillBlank !== undefined && {
+                        isCorrectAnswerFillBlank:
+                            update.isCorrectAnswerFillBlank,
+                    }),
+                    ...(update.timeClick !== undefined && {
+                        timeClick: update.timeClick,
+                    }),
+                    ...(update.player !== undefined && {
+                        playerAnswer: [...state.playerAnswer, update.player],
+                    }),
+                });
+                break;
+            case "NEXT_QUESTION":
+                state.resetQuestion();
+                break;
+            case "PLAYER_JOINED":
+            case "PLAYER_LEFT":
+                if (typeof update.totalPlayers === "number") {
+                    set({ totalPlayers: update.totalPlayers });
+                }
+                break;
+        }
+    },
+    resetStateFillBlank: () =>
+        set((state) => {
+            if (state.isCorrectAnswerFillBlank) {
+                return {
+                    isCorrectAnswerFillBlank: false,
+                };
+            }
+            return {};
+        }),
+    getSyncedTime: () => {
+        const state = get();
+        return Date.now() + state.serverTimeOffset;
+    },
+
+    resetQuestion: () =>
         set({
-          phase: "IN_PROGRESS",
-          totalQuestions: update.totalQuestions,
-          showPreQuestion: true,
-          playerCount: update.totalPlayers,
-        });
-        break;
-
-      case "PRE_QUESTION":
-        set({ showPreQuestion: false });
-        break;
-
-      case "FORCE_NEXT_QUESTION":
-        break;
-
-      case "DISPLAY_QUESTION":
-        if (update.question) {
-          set({
-            currentQuestion: update.question,
-            currentQuestionNumber: update.questionNumber,
-            showingAnswer: false,
+            playerAnswer: [],
+            playerCorrect: [],
+            correctIndexes: [],
+            textPlayerAnswer: [],
+            showAnswer: false,
+            showMedia: false,
+            showingAnswerCorrect: false,
             showingFunfact: false,
             showingScoreboard: false,
-          });
-        }
-        break;
-      case "SYNC_TIME": {
-        const syncServerTime = update.serverTime || Date.now();
-        const syncClientTime = Date.now();
-        const newOffset = syncServerTime - syncClientTime;
-
-        // Smooth the offset to avoid jumps
-        const smoothedOffset = state.serverTimeOffset * 0.7 + newOffset * 0.3;
-
-        set({
-          serverTimeOffset: smoothedOffset,
-          remainingTime: update.remainingTime,
-        });
-        break;
-      }
-
-      case "START_COUNTDOWN":
-        {
-          const serverTime = update.serverTime || Date.now();
-          const clientTime = Date.now();
-          const offset = serverTime - clientTime;
-          set({
-            countdownDuration: update.duration,
-            serverTimeOffset: offset,
-            startAt: update.startAt,
-            startCountdown: true,
+            showingVote: false,
+            isCorrectAnswerFillBlank: undefined,
+            remainingTime: undefined,
+            startAt: undefined,
+            startCountdown: false,
             skipCountdown: false,
-          });
-        }
-        break;
-      case "SKIP_COUNTDOWN":
+            countDownDuration: undefined,
+            countdownSpeed: 1,
+            currentQuestion: undefined,
+            timeClick: undefined,
+        }),
+    resetGame: () =>
         set({
-          skipCountdown: true,
-          countdownSpeed: 10,
-        });
-        break;
-
-      case "SHOW_ANSWER":
-        set({
-          showingAnswer: true,
-          showingFunfact: false,
-          showingScoreboard: false,
-          correctAnswer: update.correctIndexes,
-          playerCorrect: update.players,
-        });
-        break;
-
-      case "DISPLAY_FUNFACT":
-        set({
-          showingFunfact: true,
-          showingScoreboard: false,
-          currentFunfact: update.funfact,
-        });
-        break;
-
-      case "DISPLAY_SCOREBOARD":
-        set({
-          showingFunfact: false,
-          showingScoreboard: true,
-          playerAnswer: update.players || [],
-        });
-        break;
-      case "PAUSE_GAME":
-        set({
-          isPaused: true,
-        });
-        break;
-      case "RESUME_GAME":
-        set({
-          isPaused: false,
-          startAt: update.startAt,
-          serverTimeOffset: (update.serverTime || Date.now()) - Date.now(),
-        });
-        break;
-      case "GAME_END":
-        set({
-          showingVote: true,
-          showingAnswer: false,
-          showingFunfact: false,
-          showingScoreboard: false,
-        });
-        break;
-      case "ANSWER_RESULT":
-        set({
-          playerAnswer: [...state.playerAnswer, update.player],
-        });
-        break;
-      case "NEXT_QUESTION":
-        state.resetQuestion();
-        break;
-      case "PLAYER_JOINED":
-      case "PLAYER_LEFT":
-        if (typeof update.playerCount === "number") {
-          set({ playerCount: update.playerCount });
-        }
-        break;
-    }
-  },
-  getSyncedTime: () => {
-    const state = get();
-    return Date.now() + state.serverTimeOffset;
-  },
-
-  setScore: (player: PlayerScore) =>
-    set((state) => {
-      return {
-        playerAnswer: [...state.playerAnswer, player],
-      };
-    }),
-  resetQuestion: () =>
-    set({
-      playerAnswer: [],
-      playerCount: 0,
-      startAt: undefined,
-      showingAnswer: false,
-      showingFunfact: false,
-      showingScoreboard: false,
-      currentQuestion: undefined,
-      currentQuestionNumber: undefined,
-      correctAnswer: undefined,
-      currentFunfact: undefined,
-      countdownStartTime: undefined,
-      countdownDuration: undefined,
-      countdownSpeed: 1,
-      startCountdown: false,
-    }),
-  resetGame: () =>
-    set({
-      phase: "WAITING",
-      playerAnswer: [],
-      showingVote: false,
-      playerCorrect: [],
-      playerCount: 0,
-      showingAnswer: false,
-      showingFunfact: false,
-      showingScoreboard: false,
-      currentQuestion: undefined,
-      currentQuestionNumber: undefined,
-      totalQuestions: undefined,
-      correctAnswer: undefined,
-      currentFunfact: undefined,
-      countdownStartTime: undefined,
-      countdownDuration: undefined,
-      countdownSpeed: 1,
-    }),
+            phase: "WAITING",
+            playerAnswer: [],
+            showingVote: false,
+            playerCorrect: [],
+            textPlayerAnswer: [],
+            totalPlayers: 0,
+            showingAnswerCorrect: false,
+            showingFunfact: false,
+            showingScoreboard: false,
+            currentQuestion: undefined,
+            currentQuestionNumber: undefined,
+            totalQuestions: undefined,
+            correctIndexes: undefined,
+            currentFunfact: undefined,
+            countDownDuration: undefined,
+            countdownSpeed: 1,
+            isLastQuestion: false,
+            showAnswer: false,
+            showMedia: false,
+            showPreQuestion: false,
+            isCorrectAnswerFillBlank: false,
+            timeClick: undefined,
+            showingLastQuestion: false,
+        }),
 }));

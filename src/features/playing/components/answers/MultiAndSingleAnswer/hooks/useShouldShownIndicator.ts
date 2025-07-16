@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { QUESTION_TYPES, type QuestionType } from "../../constant";
+import { QUESTION_TYPES, type QuestionType } from "../../../../constant";
 
 export function useShouldShowIndicator(
   showingCorrectAnswer: boolean,

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 
 interface TimerBarProps {
-  isPaused: boolean;
   duration: number;
   timeClick?: number;
   score: number;

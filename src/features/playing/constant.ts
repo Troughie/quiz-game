@@ -15,13 +15,14 @@ export const ANIMATION_CONFIG = {
   baseDelay: 0.5,
   indexDelay: 0.1,
   springDuration: 0.4,
-  notificationDelay: 1000,
+  notificationDelay: 500,
 } as const;
 
 // Question types enum for better type safety
 export const QUESTION_TYPES = {
   BUTTON_SLIDE: "buttonSlide",
   CHECKBOX_SLIDE: "checkBoxSlide",
+  FILL_BLANK: "fillBlank",
 } as const;
 
 export type QuestionType = (typeof QUESTION_TYPES)[keyof typeof QUESTION_TYPES];

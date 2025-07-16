@@ -20,6 +20,7 @@ interface inputProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   index?: number;
   showDelete?: boolean;
   clickDelete?: () => void;
+  showLengthText?: boolean;
 }
 
 const InputQuiz = ({
@@ -36,6 +37,7 @@ const InputQuiz = ({
   showText = false,
   index,
   showDelete = false,
+  showLengthText = true,
   clickDelete,
   ...props
 }: inputProps) => {
@@ -125,7 +127,7 @@ const InputQuiz = ({
                   props.onChange(e);
                 }
               }}
-              placeholder={placeholder || "Type your answer here..."}
+              placeholder={placeholder ?? "Type your answer here..."}
               className={cn(
                 // Base styles
                 "w-full p-4 font-medium rounded-xl transition-all duration-300",
@@ -163,7 +165,7 @@ const InputQuiz = ({
             )}
           >
             {/* Character Counter */}
-            {(isFocused || currentValue) && (
+            {showLengthText && (isFocused || currentValue) && (
               <div
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm backdrop-blur-sm transition-colors duration-300",

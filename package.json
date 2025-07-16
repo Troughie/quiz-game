@@ -23,6 +23,7 @@
     "axios": "^1.8.4",
     "clsx": "^2.1.1",
     "framer-motion": "^12.5.0",
+    "lucide-react": "^0.525.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -31,6 +32,7 @@
     "react-router-dom": "^7.4.0",
     "socket.io-client": "^4.8.1",
     "sweetalert2": "^11.17.2",
+    "swiper": "^11.2.10",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.15",
     "use-deep-compare-effect": "^1.8.1",
@@ -52,5 +54,9 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0"
+  },
+  "prettier": {
+    "tabWidth": 4,
+    "useTabs": false
   }
 }

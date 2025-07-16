@@ -226,11 +226,11 @@ const Button = ({
           )}
         ></m.div>
         <m.button
-          ref={textRef}
           onMouseDown={() => handleClick()}
           onMouseUp={() => handleClick()}
           onMouseLeave={() => handleClick(true)}
           disabled={disabled}
+          ref={textRef}
           {...props}
           className={cn(
             "absolute inset-0 top-1 z-1 cursor-pointer duration-100 transition-all",

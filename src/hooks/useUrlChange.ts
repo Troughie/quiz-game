@@ -1,21 +1,35 @@
 import { NAME_SHOW } from "@/constant";
 import { useShowFunction } from "@/store/ShowFunction";
-import { useEffect } from "react";
-export const useUrlChange = () => {
-  const { setIsBoolean } = useShowFunction();
+import { useCallback, useEffect, useRef } from "react";
 
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      event.preventDefault();
-      setIsBoolean(NAME_SHOW.MODAL, true);
-    };
+export const usePreventNavigation = (shouldPrevent: boolean) => {
+    const { setIsBoolean } = useShowFunction();
+    const allowNavigationRef = useRef(false);
 
-    window.addEventListener("popstate", handlePopState);
+    // Xử lý nút back/forward của browser
+    const handlePopState = useCallback(() => {
+        if (shouldPrevent) {
+            // Push lại state hiện tại để "undo" việc navigate
+            window.history.pushState(null, "", window.location.pathname);
 
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return {};
+            // Hiển thị modal xác nhận
+            setIsBoolean(NAME_SHOW.MODAL, true);
+        }
+        // Reset flag sau khi xử lý
+        allowNavigationRef.current = false;
+    }, [shouldPrevent, setIsBoolean]);
+
+    useEffect(() => {
+        if (shouldPrevent) {
+            // Thêm một entry vào history để có thể "catch" khi user nhấn back
+            window.history.pushState(null, "", window.location.pathname);
+
+            // Thêm event listeners
+            window.addEventListener("popstate", handlePopState);
+
+            return () => {
+                window.removeEventListener("popstate", handlePopState);
+            };
+        }
+    }, [shouldPrevent, handlePopState]);
 };

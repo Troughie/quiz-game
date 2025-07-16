@@ -1,5 +1,5 @@
 import { CheckIcon } from "@heroicons/react/24/solid";
-import { QUESTION_TYPES, type QuestionType } from "../../constant";
+import { QUESTION_TYPES, type QuestionType } from "../../../../constant";
 
 interface AnswerCheckboxProps {
   questionType: QuestionType;

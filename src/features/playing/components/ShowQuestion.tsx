@@ -1,247 +1,258 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion as m } from "framer-motion";
 import Button from "@/components/ui/ButtonCustom";
 import { TimerBar } from "./TimerBar";
 import { QuestionMedia } from "./QuestionMedia";
 import { useTypewriter } from "../hooks/useTypewriter";
 import { useQuestionTimer } from "../hooks/useQuestionTimer";
-import type { Question } from "../types/Index";
-import ShowAnswers from "./answers/ShowAnswers";
-import { TIME_SHOW_QUESTION } from "../constant";
+import type { Question, submitAnswer } from "../types/Index";
+import { TIME_SHOW_QUESTION, type QuestionType } from "../constant";
+import { AnswerComponents } from "./answers/Answers";
+import type { GameState } from "../store/playingStore";
+import cn from "@/HOC/cn";
 
 // Define question handler type for type safety
 type QuestionHandler = (index: number) => void;
 
 interface QuestionHandlers {
-  [key: string]: QuestionHandler;
+    [key: string]: QuestionHandler;
 }
 
-interface ShowQuestionProps {
-  question: Question;
-  isPaused?: boolean;
-  isTimeTravel: boolean;
-  indexAnswersCorrect: number[];
-  startAt?: number;
-  showingFunfact: boolean;
-  submitAnswer: (answers: number[], timeClick: number) => void;
-  countDownDuration?: number;
-  startCountdown: boolean;
-  skipCountdown: boolean;
-  remainingTime?: number;
-  countdownSpeed: number;
-  getSyncedTime: () => number;
+interface ShowQuestionProps extends Omit<GameState, "phase"> {
+    question: Question;
+    submitAnswer: submitAnswer;
+    getSyncedTime: () => number;
 }
 
 const ShowQuestion = ({
-  question,
-  isPaused = false,
-  indexAnswersCorrect,
-  startAt,
-  showingFunfact,
-  submitAnswer,
-  countDownDuration = 15000,
-  startCountdown,
-  skipCountdown,
-  remainingTime,
-  countdownSpeed,
-  getSyncedTime,
+    question,
+    isPaused = false,
+    correctIndexes,
+    startAt,
+    showingFunfact,
+    submitAnswer,
+    countDownDuration,
+    startCountdown,
+    skipCountdown,
+    remainingTime,
+    countdownSpeed,
+    getSyncedTime,
+    showingAnswerCorrect,
+    showAnswer,
+    showMedia,
+    isCorrectAnswerFillBlank,
+    timeClick: serverClickRes,
+    correctText,
+    textPlayerAnswer,
 }: ShowQuestionProps) => {
-  // Component state
-  const [showAnswers, setShowAnswers] = useState(false);
-  const [answersAnimation, setAnswersAnimation] = useState(false);
-  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
+    // Component state
+    const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
+    const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  // Custom hooks
-  const { isComplete, displayText: questionText } = useTypewriter(
-    question?.question || "",
-    isPaused,
-    TIME_SHOW_QUESTION
-  );
+    // Custom hooks
+    const { displayText: questionText } = useTypewriter(
+        question?.question || "",
+        isPaused,
+        TIME_SHOW_QUESTION,
+        showAnswer
+    );
 
-  const { timeLeft, timeClick, score, recordTimeClick, percent } =
-    useQuestionTimer({
-      duration: countDownDuration,
-      startAt,
-      isPaused,
-      startCountdown,
-      skipCountdown,
-      remainingTime: remainingTime,
-      countdownSpeed: countdownSpeed,
-      getSyncedTime: getSyncedTime,
-    });
-
-  // Reset states when question changes
-  useEffect(() => {
-    setSelectedAnswers([]);
-    setHasSubmitted(false);
-    if (isComplete) {
-      setTimeout(() => {
-        setShowAnswers(true);
-      }, 1000);
-    }
-  }, [isComplete, question]);
-
-  // Helper function to handle answer submission
-  const handleSubmitAnswer = (answers: number[]) => {
-    if (!hasSubmitted && timeLeft > 0) {
-      const actualTimeClick = recordTimeClick();
-      console.log("TimeClick before submit:", actualTimeClick);
-      submitAnswer(answers, actualTimeClick);
-      setHasSubmitted(true);
-    }
-  };
-
-  // Question type specific handlers with improved type safety
-  const questionHandlers: QuestionHandlers = {
-    buttonSlide: (index: number) => {
-      if (!hasSubmitted) {
-        setSelectedAnswers([index]);
-        handleSubmitAnswer([index]);
-      }
-    },
-    checkBoxSlide: (index: number) => {
-      if (!hasSubmitted) {
-        setSelectedAnswers((prev) => {
-          const newAnswers = prev.includes(index)
-            ? prev.filter((i) => i !== index)
-            : [...prev, index];
-          return newAnswers;
+    const { timeLeft, timeClick, score, recordTimeClick, percent } =
+        useQuestionTimer({
+            countDownDuration,
+            startAt,
+            isPaused,
+            startCountdown,
+            skipCountdown,
+            remainingTime,
+            countdownSpeed,
+            getSyncedTime,
         });
-      }
-    },
-    reorderSlide: (index: number) => {
-      if (!hasSubmitted) {
-        // Handle reorder logic here
-        setSelectedAnswers((prev) => {
-          // Add the index in order they were clicked
-          if (!prev.includes(index)) {
-            return [...prev, index];
-          }
-          return prev;
-        });
-      }
-    },
-    rangeSlide: (index: number) => {
-      if (!hasSubmitted) {
-        setSelectedAnswers([index]);
-        handleSubmitAnswer([index]);
-      }
-    },
-    // Future question types can be added here
-  };
 
-  const handleAnswerClick = (index: number) => {
-    if (!startAt || timeLeft === 0) return;
+    // Reset states when question changes
+    useEffect(() => {
+        setSelectedAnswers([]);
+        setHasSubmitted(false);
+    }, [question]);
 
-    const handler =
-      questionHandlers[question?.type as keyof typeof questionHandlers];
-    if (handler) {
-      handler(index);
-    }
-  };
+    // Helper function to handle answer submission
+    const handleSubmitAnswer = useCallback(
+        (answers: number[]) => {
+            if (!hasSubmitted && timeLeft > 0) {
+                const actualTimeClick = recordTimeClick();
+                console.log(actualTimeClick);
 
-  const handleSubmitCheckBoxButton = () => {
-    if (selectedAnswers.length > 0) {
-      handleSubmitAnswer(selectedAnswers);
-    }
-  };
+                submitAnswer({
+                    timeClick: actualTimeClick,
+                    indexAnswer: answers,
+                    questionType:
+                        (question.type as QuestionType) || "buttonSlide",
+                });
+                setHasSubmitted(true);
+            }
+        },
+        [hasSubmitted, timeLeft, recordTimeClick, submitAnswer, question.type]
+    );
 
-  const handleAnimationAnswerComplete = (value: boolean) => {
-    setTimeout(() => {
-      setAnswersAnimation(value);
-    }, 2000);
-  };
+    // Question type specific handlers with improved type safety
+    const questionHandlers = useMemo<QuestionHandlers>(
+        () => ({
+            buttonSlide: (index: number) => {
+                if (!hasSubmitted) {
+                    setSelectedAnswers([index]);
+                    handleSubmitAnswer([index]);
+                }
+            },
+            checkBoxSlide: (index: number) => {
+                if (!hasSubmitted) {
+                    setSelectedAnswers((prev) => {
+                        const newAnswers = prev.includes(index)
+                            ? prev.filter((i) => i !== index)
+                            : [...prev, index];
+                        return newAnswers;
+                    });
+                }
+            },
+        }),
+        [hasSubmitted, handleSubmitAnswer]
+    );
 
-  return (
-    <div className="w-full max-w-6xl relative mx-auto p-4 flex flex-col md:flex-row gap-8 items-start">
-      {/* Left side - Question and Answers */}
-      <div className="grid grid-cols-6 space-x-12 md:space-y-8">
-        <div className="col-span-3 flex flex-col gap-8">
-          {/* Question with typewriter effect */}
-          <m.div className="text-3xl font-bold text-white min-h-[6rem]">
-            {questionText}
-            <span className="animate-pulse">|</span>
-          </m.div>
+    const handleAnswerClick = useCallback(
+        (index: number) => {
+            if (timeLeft === 0) return;
 
-          {/* Answers */}
-          <>
-            {showAnswers && (
-              <div className="space-y-4">
-                {question?.answers?.map((answer, index) => {
-                  const isLast = index === (question?.answers?.length ?? 0) - 1;
-                  return (
-                    <ShowAnswers
-                      key={index}
-                      question={question}
-                      answer={answer}
-                      handleAnswerClick={handleAnswerClick}
-                      index={index}
-                      disabled={hasSubmitted}
-                      selectedAnswers={selectedAnswers}
-                      isAnswerCorrect={
-                        indexAnswersCorrect?.length > 0 &&
-                        indexAnswersCorrect.includes(index)
-                      }
-                      isPause={isPaused}
-                      isLast={isLast}
-                      showingCorrectAnswer={indexAnswersCorrect?.length > 0}
-                      animationComplete={handleAnimationAnswerComplete}
-                    />
-                  );
-                })}
+            const handler =
+                questionHandlers[
+                    question?.type as keyof typeof questionHandlers
+                ];
+            if (handler) {
+                handler(index);
+            }
+        },
+        [question?.type, questionHandlers, timeLeft]
+    );
 
-                {question.type === "checkBoxSlide" && answersAnimation && (
-                  <m.div
-                    initial={{ opacity: 0, x: -100 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="space-y-4"
-                  >
-                    <Button
-                      onClick={handleSubmitCheckBoxButton}
-                      text="Submit"
-                      variant="success"
-                      disabled={hasSubmitted}
-                    />
-                  </m.div>
-                )}
-              </div>
-            )}
-          </>
+    const handleAnswerSubmit = useCallback(
+        (text: string) => {
+            if (!hasSubmitted) {
+                const actualTimeClick = recordTimeClick(false);
+                submitAnswer({
+                    timeClick: actualTimeClick,
+                    textAnswer: text,
+                    questionType:
+                        (question.type as QuestionType) || "buttonSlide",
+                });
+            }
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [hasSubmitted, submitAnswer]
+    );
 
-          {/* Timer */}
-          {startCountdown && (
-            <m.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="w-full"
-            >
-              <TimerBar
-                startCountDown={startCountdown}
-                isPaused={false}
-                duration={countDownDuration}
-                timeClick={timeClick}
-                percent={percent}
-                score={score}
-              />
-            </m.div>
-          )}
+    const handleSubmitCheckBoxButton = useCallback(() => {
+        if (selectedAnswers.length > 0) {
+            handleSubmitAnswer(selectedAnswers);
+        }
+    }, [handleSubmitAnswer, selectedAnswers]);
+
+    return (
+        <div className="w-full max-w-6xl relative mx-auto p-4 flex flex-col md:flex-row gap-8 items-start">
+            {/* Left side - Question and Answers */}
+            <div className="w-full max-w-6xl relative mx-auto p-4">
+                <div
+                    className={cn(
+                        "flex flex-col md:flex-row gap-8",
+                        question.media ? "items-start" : "justify-center"
+                    )}
+                >
+                    {/* Left Side - Question and Answers */}
+                    <div
+                        className={cn(
+                            "flex flex-col gap-8",
+                            question.media
+                                ? "w-full md:w-2/3"
+                                : "w-full md:w-2/3 mx-auto"
+                        )}
+                    >
+                        {/* Question with typewriter effect */}
+                        <m.div className="text-3xl font-bold text-white min-h-[6rem]">
+                            {questionText}
+                            <span className="animate-pulse">|</span>
+                        </m.div>
+
+                        {/* Answers */}
+                        {showAnswer && (
+                            <div className="space-y-4">
+                                <AnswerComponents
+                                    QType={question.type as QuestionType}
+                                    question={question}
+                                    handleAnswerClick={handleAnswerClick}
+                                    handleAnswerSubmit={handleAnswerSubmit}
+                                    disabled={hasSubmitted}
+                                    selectedAnswers={selectedAnswers}
+                                    indexAnswersCorrect={correctIndexes}
+                                    isPause={isPaused}
+                                    showingCorrectAnswer={showingAnswerCorrect}
+                                    isCorrectAnswerFillBlank={
+                                        isCorrectAnswerFillBlank
+                                    }
+                                    correctText={correctText}
+                                    textPlayerAnswer={textPlayerAnswer}
+                                />
+
+                                {question.type === "checkBoxSlide" && (
+                                    <m.div
+                                        initial={{ opacity: 0, x: -100 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.4 }}
+                                        className="space-y-4"
+                                    >
+                                        <Button
+                                            onClick={handleSubmitCheckBoxButton}
+                                            text="Submit"
+                                            variant="success"
+                                            disabled={hasSubmitted}
+                                        />
+                                    </m.div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Timer */}
+                        {showAnswer && (
+                            <m.div
+                                initial={{ opacity: 0, scale: 0 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{
+                                    duration: 0.3,
+                                    type: "spring",
+                                    stiffness: 500,
+                                    damping: 30,
+                                }}
+                                className="w-full"
+                            >
+                                <TimerBar
+                                    startCountDown={startCountdown}
+                                    duration={countDownDuration}
+                                    timeClick={serverClickRes ?? timeClick}
+                                    percent={percent}
+                                    score={score}
+                                />
+                            </m.div>
+                        )}
+                    </div>
+
+                    {/* Right Side - Media & Funfact */}
+                    {(showMedia || showingFunfact) && (
+                        <QuestionMedia
+                            media={question?.media}
+                            funFact={question?.funFact}
+                            showFunFact={showingFunfact}
+                        />
+                    )}
+                </div>
+            </div>
         </div>
-        {answersAnimation && (
-          <div className="col-span-3">
-            {/* Right side - Media and Fun Fact */}
-            <QuestionMedia
-              media={question?.media}
-              funFact={question?.funFact}
-              showFunFact={showingFunfact}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ShowQuestion;

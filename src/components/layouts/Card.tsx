@@ -1,65 +1,78 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StarIcon } from "@heroicons/react/24/solid";
-import Button from "../ui/ButtonCustom";
 import { Link, useNavigate } from "react-router";
-import type { Quiz } from "@/features/createQuiz/type";
+import { usePlayerStore } from "@/store/Player";
 import { useQuizStore } from "@/features/createQuiz/store/quizStore";
+import type { Player } from "@/types/Index";
+import type { Quiz } from "@/features/createQuiz/type";
+import QuizThumbnail from "../QuizThumbnail";
 
-const Card = React.forwardRef<HTMLDivElement, Quiz>(
-  ({ _id, name, ...quizState }, ref) => {
+interface CardProps extends Quiz {
+    _id: string;
+    media: string;
+    name: string;
+    author: Player;
+}
+const Card = React.forwardRef<object, CardProps>((data) => {
+    const { _id, author, media, name } = data;
+    const { reset, editQuiz } = useQuizStore();
+    const player = usePlayerStore((state) => state.player);
     const navigate = useNavigate();
-    const { quiz, editQuiz } = useQuizStore();
-    const handleClick = () => {
-      console.log(_id);
 
-      if (!quiz?._id || (quiz?._id && quiz?._id === _id)) {
-        const newQuiz: Quiz = {
-          _id,
-          name,
-          ...quizState,
-        };
-        editQuiz(newQuiz);
+    const handleClick = () => {
         navigate(`/play/${_id}`);
-      }
     };
+
+    const mediaUrl = useMemo(() => {
+        if (media)
+            return import.meta.env.VITE_SERVER_URL + `/files/${media}/view`;
+    }, [media]);
+
+    const handleEditQuiz = () => {
+        reset();
+        navigate(`/edit/${_id}`);
+        editQuiz(data);
+    };
+
     return (
-      <div
-        ref={ref}
-        data-last="false"
-        className="sm:pr-4 sm:w-1/4 h-full md:w-1/4 lg:w-1/5 xl:w-1/6 relative gap-2 flex flex-col flex-shrink-0 w-1/3 pr-2"
-      >
-        <div className="w-full h-2/3 group relative rounded-lg bg-red-500">
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg"></div>
-          <div className="hidden group-hover:flex items-center justify-center h-full ">
-            <Button
-              text="Play"
-              classBg="bg-cam rounded-3xl"
-              classContainer="md:px-8 md:py-4 md:block hidden rounded-3xl border-3"
-              classShadow="bg-shadow rounded-3xl"
-              classText="text-white"
-              onClick={handleClick}
+        <div className="w-full sm:w-[220px] md:w-[240px] lg:w-[220px] xl:w-[250px] flex-shrink-0 flex flex-col gap-2 rounded-lg">
+            {/* IMAGE BLOCK */}
+            <QuizThumbnail
+                mediaUrl={mediaUrl ?? ""}
+                handleClickButton={handleClick}
+                textButton="Play"
+                name={name}
             />
-          </div>
+
+            {/* TITLE */}
+            <Link
+                to={`/detail/${_id}`}
+                className="text-sm sm:text-base font-semibold hover:underline cursor-pointer line-clamp-2"
+            >
+                {name || "No name"}
+            </Link>
+
+            {/* RATING + AUTHOR */}
+            {author._id !== player._id ? (
+                <div className="flex flex-col justify-start text-xs sm:text-sm">
+                    <div className="flex items-center gap-1 text-yellow-500">
+                        <span className="font-medium">5</span>
+                        <StarIcon className="w-3 h-3 sm:w-4 sm:h-4" />
+                    </div>
+                    <div className="text-gray-500 hover:text-black   hover:underline cursor-pointer truncate">
+                        {author.username}
+                    </div>
+                </div>
+            ) : (
+                <div
+                    onClick={handleEditQuiz}
+                    className="text-sm sm:text-base font-semibold hover:underline cursor-pointer"
+                >
+                    Edit
+                </div>
+            )}
         </div>
-        <Link
-          to={`/detail/${_id}`}
-          className="text-lg font-bold hover:underline cursor-pointer transition-all duration-300 hover:scale-90"
-        >
-          {name || "No name"}
-        </Link>
-        <div className="flex gap-2">
-          <div className="star flex gap-[1px] items-center text-yellow-500">
-            <span className="font-semibold">5</span>{" "}
-            <StarIcon className="w-4 h-4 " />
-          </div>
-          <div className="by group flex gap-1 items-center cursor-pointer">
-            <span className="group-hover:underline">By</span>
-            <span className="group-hover:underline">John Doe</span>
-          </div>
-        </div>
-      </div>
     );
-  }
-);
+});
 
 export default Card;

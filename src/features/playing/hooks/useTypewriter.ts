@@ -1,102 +1,159 @@
 import { useState, useEffect, useRef } from "react";
 
 export const useTypewriter = (
-  text: string,
-  isPaused: boolean = false,
-  targetDuration: number // Thời gian mong muốn hiển thị hết text (ms)
+    text: string,
+    isPaused: boolean = false,
+    targetDuration: number, // Thời gian mong muốn hiển thị hết text (ms)
+    forceComplete: boolean = false
 ) => {
-  const [displayText, setDisplayText] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
-  const currentIndexRef = useRef(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const [displayText, setDisplayText] = useState("");
+    const [isComplete, setIsComplete] = useState(false);
+    const startTimeRef = useRef<number | null>(null);
+    const animationIdRef = useRef<number | null>(null);
 
-  // Tính toán tốc độ tự động dựa trên độ dài text và thời gian mong muốn
-  const calculateSpeed = (textLength: number, targetDuration: number) => {
-    // Tính tốc độ để hiển thị hết text trong thời gian mong muốn
-    const calculatedSpeed = targetDuration / textLength;
-    // Đảm bảo tốc độ không quá nhanh (tối thiểu 10ms) hoặc quá chậm (tối đa 500ms)
-    return Math.max(10, Math.min(500, calculatedSpeed));
-  };
-
-  // Hàm khởi động typewriter
-  const startTypeWriter = (speed: number) => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      const textLength = text?.length || 0;
-
-      if (currentIndexRef.current < textLength) {
-        currentIndexRef.current++;
-        setDisplayText(text!.substring(0, currentIndexRef.current));
-
-        // Kiểm tra xem đã hiển thị hết chưa sau khi tăng index
-        if (currentIndexRef.current >= textLength) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-          }
-          setIsComplete(true);
+    // Hàm complete ngay lập tức
+    const completeImmediately = () => {
+        if (animationIdRef.current) {
+            cancelAnimationFrame(animationIdRef.current);
+            animationIdRef.current = null;
         }
-      }
-    }, speed);
-  };
-  // Hàm dừng typewriter
-  const stopTypeWriter = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    // Cleanup function để dọn dẹp interval
-    const cleanup = () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+        setDisplayText(text);
+        setIsComplete(true);
     };
 
-    if (!text) {
-      setDisplayText("");
-      setIsComplete(false);
-      currentIndexRef.current = 0;
-      cleanup();
-      return;
-    }
+    // Hàm animation loop
+    const animate = (currentTime: number) => {
+        if (!startTimeRef.current) {
+            startTimeRef.current = currentTime;
+        }
 
-    // Khi text thay đổi, reset tất cả
-    if (currentIndexRef.current === 0 && displayText === "") {
-      console.log("New text detected, resetting...");
-      currentIndexRef.current = 0;
-      setDisplayText("");
-      setIsComplete(false);
-    }
+        const elapsedTime = currentTime - startTimeRef.current;
+        const progress = Math.min(elapsedTime / targetDuration, 1);
+        const targetIndex = Math.floor(progress * text.length);
 
-    // Nếu đang pause, dừng interval nhưng không reset gì cả
-    if (isPaused) {
-      console.log("Paused - stopping typewriter");
-      stopTypeWriter();
-      return cleanup;
-    }
+        if (targetIndex <= text.length) {
+            setDisplayText(text.substring(0, targetIndex));
+        }
 
-    // Nếu đã hoàn thành, không làm gì cả
-    if (isComplete) {
-      console.log("Already complete - no action taken");
-      return cleanup;
-    }
+        if (progress >= 1) {
+            // Animation hoàn thành
+            setDisplayText(text);
+            setIsComplete(true);
+            animationIdRef.current = null;
+        } else if (!isPaused && !forceComplete) {
+            // Tiếp tục animation
+            animationIdRef.current = requestAnimationFrame(animate);
+        }
+    };
 
-    // Nếu chưa bắt đầu hoặc đang tiếp tục từ pause
-    if (currentIndexRef.current < text.length) {
-      const actualSpeed = calculateSpeed(text.length, targetDuration);
-      startTypeWriter(actualSpeed);
-    }
+    // Hàm bắt đầu animation
+    const startAnimation = () => {
+        if (animationIdRef.current) {
+            cancelAnimationFrame(animationIdRef.current);
+        }
+        animationIdRef.current = requestAnimationFrame(animate);
+    };
 
-    return cleanup;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, targetDuration, isPaused, isComplete, displayText]);
+    // Hàm dừng animation
+    const stopAnimation = () => {
+        if (animationIdRef.current) {
+            cancelAnimationFrame(animationIdRef.current);
+            animationIdRef.current = null;
+        }
+    };
 
-  return { isComplete, displayText };
+    // Effect để handle forceComplete
+    useEffect(() => {
+        if (forceComplete && !isComplete) {
+            completeImmediately();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [forceComplete, isComplete, text]);
+
+    // Handle visibility change
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                stopAnimation();
+            } else {
+                // Khi quay lại tab, nếu không bị force complete và chưa hoàn thành
+                if (
+                    !forceComplete &&
+                    !isPaused &&
+                    !isComplete &&
+                    text &&
+                    displayText.length < text.length
+                ) {
+                    startAnimation();
+                }
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener(
+                "visibilitychange",
+                handleVisibilityChange
+            );
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isPaused, isComplete, text, displayText, forceComplete]);
+
+    // Effect chính
+    useEffect(() => {
+        // Cleanup function
+        const cleanup = () => {
+            stopAnimation();
+        };
+
+        if (!text) {
+            setDisplayText("");
+            setIsComplete(false);
+            startTimeRef.current = null;
+            cleanup();
+            return;
+        }
+
+        // Nếu bị force complete
+        if (forceComplete && !isComplete) {
+            completeImmediately();
+            return cleanup;
+        }
+
+        // Reset khi text thay đổi
+        if (displayText === "" && !isComplete) {
+            setDisplayText("");
+            setIsComplete(false);
+            startTimeRef.current = null;
+        }
+
+        // Nếu đang pause, dừng animation
+        if (isPaused) {
+            stopAnimation();
+            return cleanup;
+        }
+
+        // Nếu đã hoàn thành
+        if (isComplete) {
+            return cleanup;
+        }
+
+        // Bắt đầu hoặc tiếp tục animation
+        if (!animationIdRef.current && displayText.length < text.length) {
+            startAnimation();
+        }
+
+        return cleanup;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        text,
+        targetDuration,
+        isPaused,
+        displayText,
+        isComplete,
+        forceComplete,
+    ]);
+
+    return { displayText };
 };

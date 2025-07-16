@@ -24,12 +24,14 @@ export function getButtonSlideStyles(
   if (showingCorrectAnswer) {
     return cn(
       baseStyles,
-      isAnswerCorrect &&
-        "border-2 border-green-400 bg-green-100/20 text-white font-bold",
-      isSelected ? "bg-blue-600 text-white font-bold" : "bg-white/10 text-white"
+      "pointer-events-none select-none cursor-default",
+      isAnswerCorrect && "border-2 border-green-400 text-white font-bold",
+      isSelected
+        ? "bg-blue-600 text-white font-bold"
+        : "bg-white/10 text-white",
+      isDimmed && !isAnswerCorrect && " !opacity-40"
     );
   }
-
   return cn(
     baseStyles,
     isSelected ? "bg-blue-600 text-white font-bold" : "bg-white/10 text-white",
@@ -49,19 +51,17 @@ export function getCheckboxSlideStyles(
     return cn(
       "border border-green-400/50 bg-green-100/10 text-white",
       baseStyles,
-      isAnswerCorrect && showingCorrectAnswer && "bg-white border text-black"
+      isAnswerCorrect && showingCorrectAnswer && "bg-white/80 border text-black"
     );
   }
 
   if (isAnswerCorrect && showingCorrectAnswer) {
-    return cn("bg-white border text-black", baseStyles);
+    return cn("bg-white/80 border text-black", baseStyles);
   }
 
   return cn(
     baseStyles,
-    isSelected
-      ? "bg-blue-600/20 border border-blue-500 text-white"
-      : "bg-white/10 text-white",
+    !isSelected && "bg-white/10 text-white",
     disabled && "pointer-events-none select-none cursor-default"
   );
 }

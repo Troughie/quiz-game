@@ -22,6 +22,7 @@ export const NAME_SHOW = {
   IS_PLAYING: "is_playing",
   IS_PAUSE: "is_pause",
   DEMO_BEFORE_QUIZ_START: "demo_before_quiz_start",
+  START_GAME: "start_game",
 };
 
 export const REG_PIN = /^[0-9]{6}$/;

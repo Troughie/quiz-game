@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { QUESTION_TYPES, type QuestionType } from "../../constant";
-import { getButtonSlideStyles, getCheckboxSlideStyles } from "../../helper";
+import { QUESTION_TYPES, type QuestionType } from "../../../../constant";
+import { getButtonSlideStyles, getCheckboxSlideStyles } from "../helper";
 
 export function useAnswerStyles(
   questionType: QuestionType,

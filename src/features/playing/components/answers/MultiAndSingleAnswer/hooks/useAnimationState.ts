@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ANIMATION_STATES, type AnimationState } from "../../constant";
+import { ANIMATION_STATES, type AnimationState } from "../../../../constant";
 
 export function useAnimationState(
   showingCorrectAnswer: boolean,
